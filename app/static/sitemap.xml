@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Homepage -->
+  <url>
+    <loc>https://linkcraft.aaaiiimmm.dev/</loc>
+    <lastmod>2026-05-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Authentication -->
+  <url>
+    <loc>https://linkcraft.aaaiiimmm.dev/auth/login</loc>
+    <lastmod>2026-05-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://linkcraft.aaaiiimmm.dev/auth/register</loc>
+    <lastmod>2026-05-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Pricing/Plans -->
+  <url>
+    <loc>https://linkcraft.aaaiiimmm.dev/billing/plans</loc>
+    <lastmod>2026-05-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Dashboard (for logged-in users, but can be crawled) -->
+  <url>
+    <loc>https://linkcraft.aaaiiimmm.dev/dashboard</loc>
+    <lastmod>2026-05-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Short Links Management -->
+  <url>
+    <loc>https://linkcraft.aaaiiimmm.dev/dashboard/links</loc>
+    <lastmod>2026-05-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- QR Codes Management -->
+  <url>
+    <loc>https://linkcraft.aaaiiimmm.dev/dashboard/qr-codes</loc>
+    <lastmod>2026-05-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Landing Pages Management -->
+  <url>
+    <loc>https://linkcraft.aaaiiimmm.dev/dashboard/pages</loc>
+    <lastmod>2026-05-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Analytics -->
+  <url>
+    <loc>https://linkcraft.aaaiiimmm.dev/dashboard/analytics</loc>
+    <lastmod>2026-05-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+</urlset>
