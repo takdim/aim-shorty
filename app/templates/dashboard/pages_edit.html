@@ -1,0 +1,771 @@
+{% extends "base.html" %}
+{% block title %}Edit — {{ page.title }} — LinkCraft{% endblock %}
+{% block body_class %}page-dashboard{% endblock %}
+
+{% block body %}
+{% include "dashboard/_sidebar.html" %}
+<main class="dashboard-main">
+  {% include "dashboard/_topbar.html" %}
+  <div class="dashboard-content">
+
+    <!-- Breadcrumb -->
+    <div class="breadcrumb" style="margin-bottom:1rem">
+      <a href="{{ url_for('dashboard.pages') }}" class="breadcrumb-link">
+        <i class="ph ph-arrow-left"></i> Landing Pages
+      </a>
+      <span class="breadcrumb-sep">/</span>
+      <span>{{ page.title }}</span>
+    </div>
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div>
+        <h1 class="page-title"><i class="ph ph-pencil-simple-line"></i> Edit Landing Page</h1>
+        <a href="{{ page.public_url }}" target="_blank" class="page-subtitle" style="color:var(--clr-primary)">
+          <i class="ph ph-arrow-square-out"></i> {{ page.public_url }}
+        </a>
+      </div>
+      <div style="display:flex; gap:.75rem; align-items:center">
+        <span class="badge {% if page.is_published %}badge-success{% else %}badge-muted{% endif %}" style="padding:.4rem .8rem">
+          {{ 'Publik' if page.is_published else 'Draft' }}
+        </span>
+        <form method="POST" action="{{ url_for('dashboard.toggle_page', page_id=page.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <button type="submit" class="btn {% if page.is_published %}btn-ghost{% else %}btn-primary{% endif %} btn-sm">
+            <i class="ph ph-{{ 'eye-slash' if page.is_published else 'eye' }}"></i>
+            {{ 'Sembunyikan' if page.is_published else 'Publikasikan' }}
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Two-column Editor -->
+    <div class="editor-layout">
+
+      <!-- LEFT: Settings -->
+      <div class="editor-panel">
+
+        <!-- Section: Templates -->
+        <div class="editor-section">
+          <h3 class="editor-section-title"><i class="ph ph-palette"></i> Pilih Template</h3>
+          <div class="tmpl-grid">
+            {% for tmpl in landing_templates %}
+            <button type="button"
+              class="tmpl-card {% if (page.theme_config or {}).get('template_id') == tmpl.id %}selected{% endif %}"
+              data-bg="{{ tmpl.bg }}" data-btn="{{ tmpl.btn }}" data-text="{{ tmpl.text }}"
+              data-style="{{ tmpl.btn_style }}" data-id="{{ tmpl.id }}"
+              onclick="applyTemplate(this)" title="{{ tmpl.name }}">
+              <div class="tmpl-preview" style="background:{{ tmpl.bg }}">
+                {% if tmpl.btn_style == 'outline' %}
+                <div class="tmpl-btn-preview" style="background:transparent;border:1.5px solid {{ tmpl.btn }};color:{{ tmpl.btn }};border-radius:999px">Aa</div>
+                {% else %}
+                <div class="tmpl-btn-preview" style="background:{{ tmpl.btn }};color:{{ tmpl.text }};border-radius:{% if tmpl.btn_style == 'square' %}6px{% else %}999px{% endif %}">Aa</div>
+                {% endif %}
+              </div>
+              <span class="tmpl-name">{{ tmpl.name }}</span>
+            </button>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Section: Page Info -->
+        <div class="editor-section">
+          <h3 class="editor-section-title"><i class="ph ph-info"></i> Informasi Halaman</h3>
+          <form method="POST" action="{{ url_for('dashboard.edit_page', page_id=page.id) }}" id="page-info-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <input type="hidden" name="bg_color"    id="form-bg-color"    value="{{ (page.theme_config or {}).get('bg_color',    '#0f0f17') }}" />
+            <input type="hidden" name="btn_color"   id="form-btn-color"   value="{{ (page.theme_config or {}).get('btn_color',   '#6366f1') }}" />
+            <input type="hidden" name="text_color"  id="form-text-color"  value="{{ (page.theme_config or {}).get('text_color',  '#e2e8f0') }}" />
+            <input type="hidden" name="btn_style"   id="form-btn-style"   value="{{ (page.theme_config or {}).get('btn_style',   'pill') }}" />
+            <input type="hidden" name="template_id" id="form-template-id" value="{{ (page.theme_config or {}).get('template_id', '') }}" />
+
+            <div class="form-group">
+              <label class="form-label">Judul Halaman *</label>
+              <input type="text" name="title" class="form-input" value="{{ page.title }}"
+                required maxlength="255" id="edit-title" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Bio / Deskripsi</label>
+              <textarea name="bio" class="form-input" rows="3" id="edit-bio"
+                placeholder="Cerita singkat tentang Anda..." maxlength="500">{{ page.bio or '' }}</textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">URL Avatar</label>
+              <div class="input-wrap">
+                <i class="ph ph-image input-icon"></i>
+                <input type="url" name="avatar_url" class="form-input"
+                  placeholder="https://..." value="{{ page.avatar_url or '' }}" id="edit-avatar" />
+              </div>
+              <p class="form-hint">Masukkan URL gambar profil. Gunakan Gravatar, Twitter, atau CDN publik.</p>
+            </div>
+
+            <!-- Theme Colors -->
+            <div class="form-group">
+              <label class="form-label">Tema Warna</label>
+              <div class="color-picker-row">
+                <div class="color-picker-item">
+                  <label class="color-label">Background</label>
+                  <input type="color" id="pick-bg"   value="{{ (page.theme_config or {}).get('bg_color',  '#0f0f17') }}" />
+                </div>
+                <div class="color-picker-item">
+                  <label class="color-label">Warna Tombol</label>
+                  <input type="color" id="pick-btn"  value="{{ (page.theme_config or {}).get('btn_color', '#6366f1') }}" />
+                </div>
+                <div class="color-picker-item">
+                  <label class="color-label">Teks</label>
+                  <input type="color" id="pick-text" value="{{ (page.theme_config or {}).get('text_color','#e2e8f0') }}" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Button Style -->
+            <div class="form-group">
+              <label class="form-label">Gaya Tombol</label>
+              <div class="btn-style-row">
+                <button type="button" class="btn-style-opt {% if (page.theme_config or {}).get('btn_style','pill') == 'pill' %}active{% endif %}"
+                  data-style="pill" onclick="setBtnStyle(this)">
+                  <span class="btn-style-preview btn-style-pill">Aa</span>
+                  <span>Bulat</span>
+                </button>
+                <button type="button" class="btn-style-opt {% if (page.theme_config or {}).get('btn_style','pill') == 'square' %}active{% endif %}"
+                  data-style="square" onclick="setBtnStyle(this)">
+                  <span class="btn-style-preview btn-style-square">Aa</span>
+                  <span>Kotak</span>
+                </button>
+                <button type="button" class="btn-style-opt {% if (page.theme_config or {}).get('btn_style','pill') == 'outline' %}active{% endif %}"
+                  data-style="outline" onclick="setBtnStyle(this)">
+                  <span class="btn-style-preview btn-style-outline">Aa</span>
+                  <span>Outline</span>
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width:100%">
+              <i class="ph ph-floppy-disk"></i> Simpan Perubahan
+            </button>
+          </form>
+        </div>
+
+        <!-- Section: Links -->
+        <div class="editor-section">
+          <h3 class="editor-section-title"><i class="ph ph-link-simple"></i> Daftar Link</h3>
+
+          <!-- Platform Selector -->
+          <div class="platform-picker">
+            <p class="form-label" style="margin-bottom:.5rem">Pilih Platform</p>
+            <div class="platform-grid" id="platform-grid">
+              {% for pl in social_platforms %}
+              <button type="button"
+                class="platform-btn {% if loop.first %}selected{% endif %}"
+                data-platform="{{ pl.id }}"
+                data-icon="{{ pl.icon or '' }}"
+                data-label="{{ pl.label }}"
+                data-placeholder="{{ pl.placeholder }}"
+                onclick="selectPlatform(this)"
+                title="{{ pl.label }}">
+                {% if pl.icon %}<i class="ph ph-{{ pl.icon }}"></i>
+                {% else %}<i class="ph ph-link-simple"></i>{% endif %}
+                <span>{{ pl.label }}</span>
+              </button>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Add Link Form -->
+          <form method="POST" action="{{ url_for('dashboard.add_page_link', page_id=page.id) }}" class="add-link-form" id="add-link-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <input type="hidden" name="platform" id="selected-platform" value="{{ social_platforms[0].id if social_platforms else 'instagram' }}" />
+            <div class="form-group">
+              <label class="form-label">Label Tombol</label>
+              <input type="text" name="label" id="link-label-input" class="form-input"
+                placeholder="{{ social_platforms[0].label if social_platforms else 'Instagram' }}"
+                maxlength="255" />
+              <p class="form-hint">Kosongkan untuk menggunakan nama platform</p>
+            </div>
+            <div class="form-group">
+              <label class="form-label">URL *</label>
+              <div class="input-wrap">
+                <i class="ph ph-{{ social_platforms[0].icon if social_platforms and social_platforms[0].icon else 'link-simple' }} input-icon" id="link-icon-preview"></i>
+                <input type="url" name="url" id="link-url-input" class="form-input"
+                  placeholder="{{ social_platforms[0].placeholder if social_platforms else 'https://...' }}"
+                  required />
+              </div>
+              <p class="form-hint" id="no-icon-hint" style="display:none; color:var(--clr-warning)">
+                <i class="ph ph-warning"></i> Link ini tidak menampilkan ikon di halaman publik.
+              </p>
+            </div>
+            <button type="submit" class="btn btn-secondary btn-sm">
+              <i class="ph ph-plus"></i> Tambah Link
+            </button>
+          </form>
+
+          <!-- Link List (drag-to-reorder) -->
+          {% if page.page_links %}
+          <ul class="link-list" id="link-list" data-reorder-url="{{ url_for('dashboard.reorder_page_links', page_id=page.id) }}">
+            {% for pl in page.page_links %}
+            <li class="link-item" data-id="{{ pl.id }}">
+              <span class="drag-handle" title="Seret untuk reorder"><i class="ph ph-dots-six-vertical"></i></span>
+              <div class="link-item-info">
+                <span class="link-item-label">
+                  {% if pl.icon %}<i class="ph ph-{{ pl.icon }}" style="color:var(--clr-primary);margin-right:.3rem"></i>{% endif %}
+                  {{ pl.label }}
+                </span>
+                <span class="link-item-url" title="{{ pl.url }}">{{ pl.url | truncate(45) }}</span>
+              </div>
+              <form method="POST"
+                action="{{ url_for('dashboard.delete_page_link', page_id=page.id, link_id=pl.id) }}"
+                onsubmit="return confirm('Hapus link \'{{ pl.label }}\'?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button type="submit" class="btn-icon btn-icon--danger btn-icon--sm" title="Hapus">
+                  <i class="ph ph-trash"></i>
+                </button>
+              </form>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="no-links-hint"><i class="ph ph-link-break"></i> Belum ada link. Tambahkan link di atas.</p>
+          {% endif %}
+        </div>
+
+      </div><!-- end editor-panel -->
+
+      <!-- RIGHT: Live Preview -->
+      <div class="preview-panel">
+        <div class="preview-panel-header">
+          <span><i class="ph ph-device-mobile-camera"></i> Preview</span>
+          <a href="{{ page.public_url }}" target="_blank" class="btn btn-ghost btn-sm">
+            <i class="ph ph-arrow-square-out"></i> Buka
+          </a>
+        </div>
+        <div class="preview-phone-frame">
+          <div class="preview-phone-screen" id="preview-screen">
+            <!-- Avatar -->
+            <div class="prev-avatar-wrap">
+              <div class="prev-avatar" id="prev-avatar-bg">
+                <img id="prev-avatar-img" src="{{ page.avatar_url or '' }}"
+                  style="{{ 'display:none' if not page.avatar_url else '' }}" />
+                <span id="prev-avatar-initial">{{ page.title[0].upper() }}</span>
+              </div>
+            </div>
+            <!-- Title & Bio -->
+            <h2 class="prev-title" id="prev-title">{{ page.title }}</h2>
+            <p class="prev-bio"   id="prev-bio">{{ page.bio or '' }}</p>
+            <!-- Links -->
+            <div class="prev-links" id="prev-links">
+              {% for pl in page.page_links %}
+              <div class="prev-link-btn" data-id="{{ pl.id }}">{{ pl.label }}</div>
+              {% endfor %}
+            </div>
+            <p class="prev-brand">Dibuat dengan <strong>LinkCraft</strong></p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end editor-layout -->
+  </div>
+</main>
+
+<style>
+/* ── Editor Layout ───────────────────────────────────── */
+.editor-layout {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .editor-layout { grid-template-columns: 1fr; }
+  .preview-panel { display: none; }
+}
+
+.editor-panel { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.editor-section {
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.editor-section-title {
+  font-size: .85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--clr-text-muted);
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin: 0;
+}
+
+.breadcrumb { display: flex; align-items: center; gap: .5rem; font-size: .85rem; color: var(--clr-text-muted); }
+.breadcrumb-link { color: var(--clr-primary); text-decoration: none; display: flex; align-items: center; gap: .3rem; }
+.breadcrumb-link:hover { text-decoration: underline; }
+.breadcrumb-sep { opacity: .4; }
+
+/* ── Color Pickers ───────────────────────────────────── */
+.color-picker-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+.color-picker-item { display: flex; flex-direction: column; align-items: center; gap: .4rem; }
+.color-label { font-size: .72rem; color: var(--clr-text-muted); }
+input[type="color"] {
+  width: 44px; height: 44px;
+  border: 2px solid var(--clr-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  background: none;
+  padding: 0;
+}
+
+/* ── Add Link Form ───────────────────────────────────── */
+.add-link-form {
+  background: var(--clr-surface-2);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+.add-link-form .form-group { margin: 0; }
+
+/* ── Link List ───────────────────────────────────────── */
+.link-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+.link-item {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  background: var(--clr-surface-2);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius);
+  padding: .6rem .875rem;
+  cursor: default;
+}
+.link-item.dragging { opacity: .4; border-style: dashed; }
+.drag-handle {
+  cursor: grab;
+  color: var(--clr-text-dim);
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.drag-handle:active { cursor: grabbing; }
+.link-item-info { flex: 1; min-width: 0; }
+.link-item-label { display: block; font-size: .85rem; font-weight: 600; color: var(--clr-text); }
+.link-item-url   { display: block; font-size: .72rem; color: var(--clr-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn-icon--sm { width: 28px; height: 28px; }
+
+.no-links-hint {
+  font-size: .8rem;
+  color: var(--clr-text-dim);
+  text-align: center;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+}
+
+/* ── Preview Panel ───────────────────────────────────── */
+.preview-panel {
+  position: sticky;
+  top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+.preview-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--clr-text-muted);
+}
+.preview-phone-frame {
+  width: 280px;
+  margin: 0 auto;
+  border: 3px solid var(--clr-border);
+  border-radius: 2rem;
+  overflow: hidden;
+  background: var(--clr-surface);
+  box-shadow: var(--shadow-lg);
+}
+.preview-phone-screen {
+  padding: 1.5rem 1rem 2rem;
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .6rem;
+  transition: background var(--tr);
+}
+.prev-avatar-wrap { margin-bottom: .25rem; }
+.prev-avatar {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem; font-weight: 700; color: #fff;
+  overflow: hidden;
+  transition: background var(--tr);
+}
+.prev-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.prev-title {
+  font-size: .95rem; font-weight: 700;
+  margin: 0; text-align: center;
+  transition: color var(--tr);
+}
+.prev-bio {
+  font-size: .72rem; text-align: center;
+  margin: 0; opacity: .75;
+  transition: color var(--tr);
+}
+.prev-links {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  margin-top: .5rem;
+}
+.prev-link-btn {
+  width: 100%;
+  padding: .55rem 1rem;
+  border-radius: 999px;
+  text-align: center;
+  font-size: .78rem;
+  font-weight: 600;
+  cursor: default;
+  transition: background var(--tr), color var(--tr);
+}
+.prev-brand {
+  margin-top: auto;
+  font-size: .6rem;
+  opacity: .4;
+}
+
+.badge-success { background: rgba(16,185,129,.15); color: #10b981; }
+.badge-muted   { background: rgba(100,116,139,.15); color: var(--clr-text-dim); }
+
+/* ── Templates ───────────────────────────────────────── */
+.tmpl-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: .5rem;
+}
+.tmpl-card {
+  background: none;
+  border: 2px solid var(--clr-border);
+  border-radius: var(--radius);
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: border-color var(--tr), box-shadow var(--tr);
+}
+.tmpl-card:hover { border-color: var(--clr-primary-light); }
+.tmpl-card.selected { border-color: var(--clr-primary); box-shadow: 0 0 0 2px rgba(99,102,241,.3); }
+.tmpl-preview {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: .4rem;
+}
+.tmpl-btn-preview {
+  padding: .2rem .5rem;
+  font-size: .6rem;
+  font-weight: 700;
+}
+.tmpl-name {
+  font-size: .6rem;
+  text-align: center;
+  padding: .25rem .2rem .35rem;
+  color: var(--clr-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Platform Grid ───────────────────────────────────── */
+.platform-picker { display: flex; flex-direction: column; gap: .75rem; }
+.platform-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: .35rem;
+}
+.platform-btn {
+  background: var(--clr-surface-2);
+  border: 1.5px solid var(--clr-border);
+  border-radius: var(--radius);
+  padding: .55rem .2rem .45rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .2rem;
+  transition: border-color var(--tr), background var(--tr), color var(--tr);
+  color: var(--clr-text-muted);
+}
+.platform-btn i { font-size: 1.15rem; }
+.platform-btn span {
+  font-size: .58rem;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  padding: 0 .15rem;
+}
+.platform-btn:hover { border-color: var(--clr-primary-light); color: var(--clr-text); }
+.platform-btn.selected {
+  border-color: var(--clr-primary);
+  background: rgba(99,102,241,.12);
+  color: var(--clr-primary-light);
+}
+
+/* ── Button Style Selector ───────────────────────────── */
+.btn-style-row { display: flex; gap: .5rem; }
+.btn-style-opt {
+  flex: 1;
+  background: var(--clr-surface-2);
+  border: 1.5px solid var(--clr-border);
+  border-radius: var(--radius);
+  padding: .6rem .5rem .5rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .4rem;
+  font-size: .72rem;
+  color: var(--clr-text-muted);
+  transition: border-color var(--tr), color var(--tr);
+}
+.btn-style-opt:hover { border-color: var(--clr-primary-light); }
+.btn-style-opt.active { border-color: var(--clr-primary); color: var(--clr-primary-light); }
+.btn-style-preview {
+  padding: .25rem .75rem;
+  font-size: .72rem;
+  font-weight: 700;
+  background: var(--clr-primary);
+  color: #fff;
+}
+.btn-style-pill    { border-radius: 999px; }
+.btn-style-square  { border-radius: 5px; }
+.btn-style-outline { border-radius: 999px; background: transparent; border: 2px solid var(--clr-primary); color: var(--clr-primary); }
+</style>
+
+<script>
+// ── DOM refs ───────────────────────────────────────────────────────
+const formBg       = document.getElementById('form-bg-color');
+const formBtn      = document.getElementById('form-btn-color');
+const formText     = document.getElementById('form-text-color');
+const formBtnStyle = document.getElementById('form-btn-style');
+const formTmplId   = document.getElementById('form-template-id');
+
+const pickBg   = document.getElementById('pick-bg');
+const pickBtn  = document.getElementById('pick-btn');
+const pickText = document.getElementById('pick-text');
+
+const screen         = document.getElementById('preview-screen');
+const prevAvatarBg   = document.getElementById('prev-avatar-bg');
+const prevTitle      = document.getElementById('prev-title');
+const prevBio        = document.getElementById('prev-bio');
+const prevLinks      = document.getElementById('prev-links');
+
+let currentBtnStyle = formBtnStyle?.value || 'pill';
+
+// ── Preview: apply btn style to buttons ───────────────────────────
+function updatePreviewBtnStyle() {
+  const btn  = pickBtn.value;
+  const text = pickText.value;
+  document.querySelectorAll('.prev-link-btn').forEach(el => {
+    if (currentBtnStyle === 'outline') {
+      el.style.background   = 'transparent';
+      el.style.border       = `2px solid ${btn}`;
+      el.style.color        = btn;
+      el.style.borderRadius = '999px';
+    } else if (currentBtnStyle === 'square') {
+      el.style.background   = btn;
+      el.style.border       = 'none';
+      el.style.color        = text;
+      el.style.borderRadius = '8px';
+    } else {
+      el.style.background   = btn;
+      el.style.border       = 'none';
+      el.style.color        = text;
+      el.style.borderRadius = '999px';
+    }
+  });
+}
+
+// ── Theme colors → preview ─────────────────────────────────────────
+function applyTheme() {
+  const bg   = pickBg.value;
+  const btn  = pickBtn.value;
+  const text = pickText.value;
+
+  screen.style.background       = bg;
+  prevTitle.style.color         = text;
+  prevBio.style.color           = text;
+  prevAvatarBg.style.background = btn;
+  formBg.value   = bg;
+  formBtn.value  = btn;
+  formText.value = text;
+
+  updatePreviewBtnStyle();
+}
+
+pickBg.addEventListener('input',   () => { formTmplId.value = ''; removeSelectedTemplate(); applyTheme(); });
+pickBtn.addEventListener('input',  () => { formTmplId.value = ''; removeSelectedTemplate(); applyTheme(); });
+pickText.addEventListener('input', () => { formTmplId.value = ''; removeSelectedTemplate(); applyTheme(); });
+applyTheme(); // init
+
+// ── Template picker ────────────────────────────────────────────────
+function removeSelectedTemplate() {
+  document.querySelectorAll('.tmpl-card').forEach(c => c.classList.remove('selected'));
+}
+
+function applyTemplate(card) {
+  removeSelectedTemplate();
+  card.classList.add('selected');
+
+  pickBg.value   = card.dataset.bg;
+  pickBtn.value  = card.dataset.btn;
+  pickText.value = card.dataset.text;
+  formTmplId.value = card.dataset.id;
+
+  setBtnStyleById(card.dataset.style);
+  applyTheme();
+}
+
+// ── Button style selector ──────────────────────────────────────────
+function setBtnStyleById(style) {
+  currentBtnStyle    = style;
+  formBtnStyle.value = style;
+  document.querySelectorAll('.btn-style-opt').forEach(b => {
+    b.classList.toggle('active', b.dataset.style === style);
+  });
+  updatePreviewBtnStyle();
+}
+
+function setBtnStyle(btn) {
+  formTmplId.value = '';
+  removeSelectedTemplate();
+  setBtnStyleById(btn.dataset.style);
+}
+
+// ── Live text preview ──────────────────────────────────────────────
+const editTitle  = document.getElementById('edit-title');
+const editBio    = document.getElementById('edit-bio');
+const editAvatar = document.getElementById('edit-avatar');
+const prevAvatarImg     = document.getElementById('prev-avatar-img');
+const prevAvatarInitial = document.getElementById('prev-avatar-initial');
+
+editTitle?.addEventListener('input', () => {
+  prevTitle.textContent = editTitle.value || 'Judul Halaman';
+  if (!editAvatar.value) prevAvatarInitial.textContent = (editTitle.value[0] || '?').toUpperCase();
+});
+editBio?.addEventListener('input',   () => { prevBio.textContent = editBio.value; });
+editAvatar?.addEventListener('input', () => {
+  const url = editAvatar.value.trim();
+  if (url) {
+    prevAvatarImg.src = url;
+    prevAvatarImg.style.display = '';
+    prevAvatarInitial.style.display = 'none';
+  } else {
+    prevAvatarImg.style.display = 'none';
+    prevAvatarInitial.style.display = '';
+  }
+});
+
+// ── Platform selector ──────────────────────────────────────────────
+const selectedPlatformInput = document.getElementById('selected-platform');
+const linkLabelInput        = document.getElementById('link-label-input');
+const linkUrlInput          = document.getElementById('link-url-input');
+const noIconHint            = document.getElementById('no-icon-hint');
+const linkIconPreview       = document.getElementById('link-icon-preview');
+
+function selectPlatform(btn) {
+  document.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+
+  const icon        = btn.dataset.icon;
+  const label       = btn.dataset.label;
+  const placeholder = btn.dataset.placeholder;
+
+  selectedPlatformInput.value = btn.dataset.platform;
+  linkUrlInput.placeholder    = placeholder;
+  linkLabelInput.placeholder  = label;
+
+  if (icon) {
+    noIconHint.style.display    = 'none';
+    linkIconPreview.className   = `ph ph-${icon} input-icon`;
+  } else {
+    noIconHint.style.display    = '';
+    linkIconPreview.className   = 'ph ph-link-simple input-icon';
+  }
+}
+
+// ── Drag-to-reorder links ──────────────────────────────────────────
+const linkList = document.getElementById('link-list');
+if (linkList) {
+  let dragged = null;
+
+  linkList.addEventListener('dragstart', e => {
+    dragged = e.target.closest('.link-item');
+    if (dragged) dragged.classList.add('dragging');
+  });
+  linkList.addEventListener('dragend', e => {
+    if (dragged) dragged.classList.remove('dragging');
+    dragged = null;
+    saveOrder();
+  });
+  linkList.querySelectorAll('.link-item').forEach(item => {
+    item.setAttribute('draggable', 'true');
+  });
+  linkList.addEventListener('dragover', e => {
+    e.preventDefault();
+    const afterEl = getDragAfterElement(linkList, e.clientY);
+    if (dragged) {
+      afterEl ? linkList.insertBefore(dragged, afterEl) : linkList.appendChild(dragged);
+    }
+  });
+
+  function getDragAfterElement(container, y) {
+    const items = [...container.querySelectorAll('.link-item:not(.dragging)')];
+    return items.reduce((closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+      return (offset < 0 && offset > closest.offset) ? { offset, element: child } : closest;
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+  }
+
+  function saveOrder() {
+    const order = [...linkList.querySelectorAll('.link-item')].map(el => el.dataset.id);
+    const reorderUrl = linkList.dataset.reorderUrl;
+    fetch(reorderUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
+      body: JSON.stringify({ order }),
+    });
+    // Also reorder preview buttons
+    const previewLinks = document.getElementById('prev-links');
+    order.forEach(id => {
+      const btn = previewLinks.querySelector(`[data-id="${id}"]`);
+      if (btn) previewLinks.appendChild(btn);
+    });
+  }
+}
+</script>
+{% endblock %}

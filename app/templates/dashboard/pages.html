@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% block title %}Pages — LinkCraft{% endblock %}
+{% block body_class %}page-dashboard{% endblock %}
+
+{% block body %}
+{% include "dashboard/_sidebar.html" %}
+<main class="dashboard-main">
+  {% include "dashboard/_topbar.html" %}
+  <div class="dashboard-content">
+
+    <!-- Header -->
+    <div class="page-header">
+      <div>
+        <h1 class="page-title"><i class="ph ph-layout"></i> Pages</h1>
+        <p class="page-subtitle">{{ pages_count }} / {{ pages_limit }} halaman digunakan</p>
+      </div>
+      {% if pages_count < pages_limit %}
+      <a href="{{ url_for('dashboard.new_page_wizard') }}" class="btn btn-primary">
+        <i class="ph ph-plus"></i> Create Page
+      </a>
+      {% else %}
+      <a href="{{ url_for('billing.plans') }}" class="btn btn-warning">
+        <i class="ph ph-crown-simple"></i> Upgrade
+      </a>
+      {% endif %}
+    </div>
+
+    {% if pages %}
+    <!-- Pages List -->
+    <div class="pages-list">
+      {% for page in pages %}
+      {% set theme = page.theme_config or {} %}
+      <div class="page-row">
+
+        <!-- Thumbnail -->
+        <a href="{{ url_for('dashboard.build_page', page_id=page.id) }}" class="page-thumb-link">
+          <div class="page-thumb" style="background:{{ theme.get('bg_color','#0f0f17') }}">
+            <div class="page-thumb-inner">
+              <div class="pt-avatar" style="background:{{ theme.get('btn_color','#6366f1') }}">
+                {% if page.avatar_url %}
+                  <img src="{{ page.avatar_url }}" alt="" />
+                {% else %}
+                  {{ page.title[0].upper() }}
+                {% endif %}
+              </div>
+              <div class="pt-title" style="color:{{ theme.get('text_color','#e2e8f0') }}">{{ page.title | truncate(18) }}</div>
+              <div class="pt-links">
+                {% for pl in page.page_links[:3] %}
+                <div class="pt-btn"
+                  style="background:{{ theme.get('btn_color','#6366f1') }};color:{{ theme.get('text_color','#e2e8f0') }};border-radius:{% if theme.get('btn_style','pill')=='square' %}4px{% else %}999px{% endif %}">
+                  {{ pl.label | truncate(14) }}
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </a>
+
+        <!-- Info -->
+        <div class="page-info">
+          <a href="{{ url_for('dashboard.build_page', page_id=page.id) }}" class="page-info-slug">
+            linkcraft.io/p/{{ page.slug }}
+          </a>
+          <div class="page-info-meta">
+            <span>Dibuat {{ page.created_at.strftime('%d %b %Y') }}</span>
+            <span class="meta-dot">·</span>
+            <span>Diperbarui {{ page.updated_at.strftime('%d %b %Y') }}</span>
+          </div>
+          <div class="page-info-stats">
+            <span class="page-stat"><i class="ph ph-chart-bar"></i> {{ page.click_events.count() }} views</span>
+            <span class="page-stat"><i class="ph ph-link-simple"></i> {{ page.page_links | length }} link</span>
+            <span class="badge {% if page.is_published %}badge-success{% else %}badge-muted{% endif %}">
+              {{ 'Publik' if page.is_published else 'Draft' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="page-actions">
+          <a href="{{ url_for('dashboard.build_page', page_id=page.id) }}"
+             class="btn btn-ghost btn-sm" title="Edit"><i class="ph ph-pencil-simple"></i></a>
+          <a href="{{ page.public_url }}" target="_blank"
+             class="btn btn-ghost btn-sm" title="Preview"><i class="ph ph-arrow-square-out"></i></a>
+          <div class="dropdown" id="drop-{{ page.id }}">
+            <button class="btn btn-ghost btn-sm" onclick="toggleDrop('drop-{{ page.id }}')">
+              <i class="ph ph-dots-three-vertical"></i>
+            </button>
+            <div class="dropdown-menu">
+              <form method="POST" action="{{ url_for('dashboard.toggle_page', page_id=page.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button type="submit" class="dropdown-item">
+                  <i class="ph ph-{{ 'eye-slash' if page.is_published else 'eye' }}"></i>
+                  {{ 'Sembunyikan' if page.is_published else 'Publikasikan' }}
+                </button>
+              </form>
+              <form method="POST" action="{{ url_for('dashboard.delete_page', page_id=page.id) }}"
+                onsubmit="return confirm('Hapus halaman \'{{ page.title }}\'?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button type="submit" class="dropdown-item dropdown-item--danger">
+                  <i class="ph ph-trash"></i> Hapus
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <!-- Empty State -->
+    <div class="pages-empty">
+      <i class="ph ph-layout"></i>
+      <h3>Belum ada halaman</h3>
+      <p>Buat landing page link-in-bio pertama Anda dalam hitungan detik.</p>
+      <a href="{{ url_for('dashboard.new_page_wizard') }}" class="btn btn-primary">
+        <i class="ph ph-plus"></i> Create Page
+      </a>
+    </div>
+    {% endif %}
+
+  </div>
+</main>
+
+<style>
+.pages-list { display: flex; flex-direction: column; gap: .75rem; }
+
+.page-row {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  transition: box-shadow var(--tr);
+}
+.page-row:hover { box-shadow: var(--shadow); }
+
+.page-thumb-link { flex-shrink: 0; text-decoration: none; }
+.page-thumb {
+  width: 88px; height: 112px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.06);
+  flex-shrink: 0;
+}
+.page-thumb-inner {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column; align-items: center;
+  gap: .18rem; padding: .55rem .35rem .4rem;
+}
+.pt-avatar {
+  width: 22px; height: 22px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .55rem; font-weight: 700; color: #fff; overflow: hidden; flex-shrink: 0;
+}
+.pt-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.pt-title { font-size: .42rem; font-weight: 700; text-align: center; line-height: 1.2; max-width: 76px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pt-links { width: 100%; display: flex; flex-direction: column; gap: .13rem; margin-top: .08rem; }
+.pt-btn { font-size: .35rem; font-weight: 600; text-align: center; padding: .12rem .25rem; opacity: .9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.page-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .3rem; }
+.page-info-slug { font-size: .95rem; font-weight: 600; color: var(--clr-text); text-decoration: none; }
+.page-info-slug:hover { color: var(--clr-primary); }
+.page-info-meta { display: flex; align-items: center; gap: .4rem; font-size: .75rem; color: var(--clr-text-muted); }
+.meta-dot { opacity: .35; }
+.page-info-stats { display: flex; align-items: center; gap: .75rem; margin-top: .1rem; flex-wrap: wrap; }
+.page-stat { font-size: .78rem; color: var(--clr-text-muted); display: flex; align-items: center; gap: .25rem; }
+
+.page-actions { display: flex; align-items: center; gap: .25rem; flex-shrink: 0; }
+.dropdown { position: relative; }
+.dropdown-menu {
+  display: none; position: absolute; right: 0; top: calc(100% + .4rem); z-index: 50;
+  background: var(--clr-surface-2); border: 1px solid var(--clr-border);
+  border-radius: var(--radius); padding: .35rem; min-width: 160px; box-shadow: var(--shadow);
+}
+.dropdown-menu.open { display: block; }
+.dropdown-item {
+  display: flex; align-items: center; gap: .5rem; width: 100%;
+  padding: .5rem .75rem; font-size: .82rem; color: var(--clr-text-muted);
+  background: none; border: none; cursor: pointer; border-radius: var(--radius-sm); text-align: left;
+}
+.dropdown-item:hover { background: var(--clr-border); color: var(--clr-text); }
+.dropdown-item--danger:hover { background: rgba(239,68,68,.12); color: var(--clr-danger); }
+
+.badge-success { background: rgba(16,185,129,.15); color: #10b981; padding: .2rem .55rem; border-radius: 999px; font-size: .72rem; font-weight: 600; }
+.badge-muted   { background: rgba(100,116,139,.15); color: var(--clr-text-dim); padding: .2rem .55rem; border-radius: 999px; font-size: .72rem; font-weight: 600; }
+
+.pages-empty {
+  text-align: center; padding: 5rem 2rem;
+  display: flex; flex-direction: column; align-items: center; gap: .875rem; color: var(--clr-text-muted);
+}
+.pages-empty i { font-size: 3rem; color: var(--clr-text-dim); }
+.pages-empty h3 { color: var(--clr-text); margin: 0; }
+.pages-empty p { max-width: 340px; margin: 0; }
+</style>
+
+<script>
+function toggleDrop(id) {
+  const menu = document.querySelector(`#${id} .dropdown-menu`);
+  if (!menu) return;
+  const isOpen = menu.classList.contains('open');
+  document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
+  if (!isOpen) menu.classList.add('open');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.dropdown'))
+    document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
+});
+</script>
+{% endblock %}

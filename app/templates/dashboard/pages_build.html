@@ -1,0 +1,768 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} — Editor — LinkCraft{% endblock %}
+{% block body_class %}page-build{% endblock %}
+
+{% set theme = page.theme_config or {} %}
+{% set bg    = theme.get('bg_color',   '#0f0f17') %}
+{% set btn   = theme.get('btn_color',  '#6366f1') %}
+{% set text  = theme.get('text_color', '#e2e8f0') %}
+{% set style = theme.get('btn_style',  'pill') %}
+
+{% block body %}
+<div class="build-layout">
+
+  <!-- ── TOP BAR ─────────────────────────────── -->
+  <header class="build-topbar">
+    <div class="build-topbar-left">
+      <a href="{{ url_for('dashboard.pages') }}" class="build-back-btn">
+        <i class="ph ph-arrow-left"></i>
+      </a>
+      <a href="{{ page.public_url }}" target="_blank" class="build-slug">
+        <i class="ph ph-link-simple"></i> linkcraft.io/p/{{ page.slug }}
+        <button type="button" class="copy-slug-btn" onclick="copyText('{{ page.public_url }}'); event.preventDefault()" title="Salin URL">
+          <i class="ph ph-copy"></i>
+        </button>
+      </a>
+    </div>
+    <nav class="build-tabs" id="build-tabs">
+      <button class="build-tab {% if tab=='build' %}active{% endif %}" onclick="switchTab('build')">
+        <i class="ph ph-squares-four"></i> Build
+      </button>
+      <button class="build-tab {% if tab=='design' %}active{% endif %}" onclick="switchTab('design')">
+        <i class="ph ph-paint-brush"></i> Design
+      </button>
+      <button class="build-tab {% if tab=='track' %}active{% endif %}" onclick="switchTab('track')">
+        <i class="ph ph-chart-bar"></i> Track
+      </button>
+    </nav>
+    <div class="build-topbar-right">
+      <a href="{{ page.public_url }}" target="_blank" class="btn btn-ghost btn-sm">
+        <i class="ph ph-arrow-square-out"></i> Preview
+      </a>
+      <form method="POST" action="{{ url_for('dashboard.toggle_page', page_id=page.id) }}" style="display:inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <button type="submit" class="btn {% if page.is_published %}btn-secondary{% else %}btn-primary{% endif %} btn-sm">
+          {% if page.is_published %}
+            <i class="ph ph-eye-slash"></i> Sembunyikan
+          {% else %}
+            <i class="ph ph-rocket-launch"></i> Publikasikan
+          {% endif %}
+        </button>
+      </form>
+    </div>
+  </header>
+
+  <!-- ── MAIN BODY ────────────────────────────── -->
+  <div class="build-body">
+
+    <!-- ── LEFT: Panels ───────────────────────── -->
+    <div class="build-panels" id="build-panels">
+
+      <!-- ╔══ BUILD TAB ═══╗ -->
+      <div class="build-panel {% if tab=='build' %}active{% endif %}" id="panel-build">
+        <!-- Add button -->
+        <div class="build-add-row">
+          <button class="btn btn-primary" onclick="openModal('add-content-modal')">
+            <i class="ph ph-plus"></i> Add
+          </button>
+        </div>
+
+        <!-- Content list -->
+        {% if page.page_links %}
+        <ul class="build-link-list" id="build-link-list"
+          data-reorder-url="{{ url_for('dashboard.reorder_page_links', page_id=page.id) }}">
+          {% for pl in page.page_links %}
+          <li class="build-link-item {% if not pl.is_active %}inactive{% endif %}" data-id="{{ pl.id }}">
+            <span class="drag-handle"><i class="ph ph-dots-six-vertical"></i></span>
+            <div class="build-link-icon {% if pl.icon %}has-icon{% endif %}">
+              {% if pl.icon %}<i class="ph ph-{{ pl.icon }}"></i>
+              {% else %}<i class="ph ph-link-simple"></i>{% endif %}
+            </div>
+            <div class="build-link-info">
+              <span class="build-link-label">{{ pl.label }}</span>
+              <span class="build-link-url">{{ pl.url | truncate(50) }}</span>
+            </div>
+            <div class="build-link-actions">
+              <form method="POST"
+                action="{{ url_for('dashboard.delete_page_link', page_id=page.id, link_id=pl.id) }}"
+                onsubmit="return confirm('Hapus \'{{ pl.label }}\'?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button type="submit" class="build-icon-btn build-icon-btn--danger" title="Hapus">
+                  <i class="ph ph-trash"></i>
+                </button>
+              </form>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <div class="build-empty">
+          <i class="ph ph-link-break"></i>
+          <p>Belum ada konten. Klik <strong>Add</strong> untuk menambahkan.</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- ╔══ DESIGN TAB ══╗ -->
+      <div class="build-panel {% if tab=='design' %}active{% endif %}" id="panel-design">
+        <form method="POST" action="{{ url_for('dashboard.save_page_design', page_id=page.id) }}" id="design-form">
+          <input type="hidden" name="csrf_token"   value="{{ csrf_token() }}" />
+          <input type="hidden" name="bg_color"     id="d-bg"     value="{{ bg }}" />
+          <input type="hidden" name="btn_color"    id="d-btn"    value="{{ btn }}" />
+          <input type="hidden" name="text_color"   id="d-text"   value="{{ text }}" />
+          <input type="hidden" name="btn_style"    id="d-style"  value="{{ style }}" />
+          <input type="hidden" name="template_id"  id="d-tmpl"   value="{{ theme.get('template_id','') }}" />
+
+          <!-- Template swatches -->
+          <div class="design-section">
+            <h4 class="design-section-title">Template</h4>
+            <div class="design-tmpl-row">
+              {% for tmpl in landing_templates %}
+              <button type="button"
+                class="design-tmpl-swatch {% if theme.get('template_id') == tmpl.id %}selected{% endif %}"
+                title="{{ tmpl.name }}"
+                data-bg="{{ tmpl.bg }}" data-btn="{{ tmpl.btn }}" data-text="{{ tmpl.text }}"
+                data-style="{{ tmpl.btn_style }}" data-id="{{ tmpl.id }}"
+                onclick="applyDesignTemplate(this)">
+                <div style="background:{{ tmpl.bg }};width:100%;height:28px;border-radius:4px 4px 0 0"></div>
+                <div style="background:{{ tmpl.btn }};width:60%;height:6px;border-radius:999px;margin:.3rem auto 0"></div>
+              </button>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Profile info -->
+          <div class="design-section">
+            <h4 class="design-section-title">Profil</h4>
+            <div class="form-group">
+              <label class="form-label">Judul *</label>
+              <input type="text" name="title" id="d-title-input" class="form-input"
+                value="{{ page.title }}" required maxlength="255" oninput="prevTitle.textContent=this.value||'Judul'" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Bio</label>
+              <textarea name="bio" class="form-input" rows="2" maxlength="300"
+                oninput="prevBio.textContent=this.value">{{ page.bio or '' }}</textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">URL Avatar</label>
+              <input type="url" name="avatar_url" class="form-input"
+                value="{{ page.avatar_url or '' }}" placeholder="https://..."
+                oninput="updateAvatar(this.value)" />
+            </div>
+          </div>
+
+          <!-- Colors -->
+          <div class="design-section">
+            <h4 class="design-section-title">Warna</h4>
+            <div class="design-color-row">
+              <div class="design-color-item">
+                <label class="design-color-label">Background</label>
+                <input type="color" id="d-pick-bg"   value="{{ bg }}"   oninput="updateDesignColor()" />
+              </div>
+              <div class="design-color-item">
+                <label class="design-color-label">Tombol</label>
+                <input type="color" id="d-pick-btn"  value="{{ btn }}"  oninput="updateDesignColor()" />
+              </div>
+              <div class="design-color-item">
+                <label class="design-color-label">Teks</label>
+                <input type="color" id="d-pick-text" value="{{ text }}" oninput="updateDesignColor()" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Button style -->
+          <div class="design-section">
+            <h4 class="design-section-title">Gaya Tombol</h4>
+            <div class="design-btn-style-row">
+              {% for s, label in [('pill','Bulat'),('square','Kotak'),('outline','Outline')] %}
+              <button type="button"
+                class="design-style-btn {% if style == s %}active{% endif %}"
+                data-style="{{ s }}" onclick="setBtnStyle(this)">
+                <span class="design-style-preview design-style-{{ s }}">Aa</span>
+                <span>{{ label }}</span>
+              </button>
+              {% endfor %}
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width:100%; margin-top:.5rem">
+            <i class="ph ph-floppy-disk"></i> Simpan Desain
+          </button>
+        </form>
+      </div>
+
+      <!-- ╔══ TRACK TAB ═══╗ -->
+      <div class="build-panel {% if tab=='track' %}active{% endif %}" id="panel-track">
+        <div class="track-stats">
+          <div class="track-stat-card">
+            <span class="track-stat-num">{{ page.click_events.count() }}</span>
+            <span class="track-stat-label">Total Views</span>
+          </div>
+          <div class="track-stat-card">
+            <span class="track-stat-num">{{ page.page_links | length }}</span>
+            <span class="track-stat-label">Total Link</span>
+          </div>
+        </div>
+        <div class="track-upgrade-hint">
+          <i class="ph ph-crown-simple"></i>
+          <div>
+            <strong>Analytics Detail</strong>
+            <p>Upgrade ke Starter atau Pro untuk melihat data klik per link, negara, dan perangkat.</p>
+          </div>
+          <a href="{{ url_for('billing.plans') }}" class="btn btn-warning btn-sm">Upgrade</a>
+        </div>
+      </div>
+
+    </div><!-- end build-panels -->
+
+    <!-- ── RIGHT: Live Preview ─────────────────── -->
+    <div class="build-preview-panel">
+      <div class="build-preview-label"><i class="ph ph-device-mobile-camera"></i> Draft preview</div>
+      <div class="build-phone-frame">
+        <div class="build-phone-screen" id="build-preview-screen" style="background:{{ bg }}">
+          <div class="bprev-avatar" id="bprev-avatar" style="background:{{ btn }}">
+            {% if page.avatar_url %}
+              <img id="bprev-avatar-img" src="{{ page.avatar_url }}" />
+            {% else %}
+              <span id="bprev-initial">{{ page.title[0].upper() }}</span>
+            {% endif %}
+          </div>
+          <h3 class="bprev-title" id="bprev-title" style="color:{{ text }}">{{ page.title }}</h3>
+          <p class="bprev-bio" id="bprev-bio" style="color:{{ text }}">{{ page.bio or '' }}</p>
+          <div class="bprev-links" id="bprev-links">
+            {% for pl in page.page_links if pl.is_active %}
+            <div class="bprev-btn" data-id="{{ pl.id }}"
+              style="{% if style=='outline' %}background:transparent;border:2px solid {{ btn }};color:{{ btn }};{% elif style=='square' %}background:{{ btn }};color:{{ text }};border-radius:8px;{% else %}background:{{ btn }};color:{{ text }};{% endif %}
+              {% if style!='outline' and style!='square' %}border-radius:999px;{% elif style=='outline' %}border-radius:999px;{% endif %}">
+              {% if pl.icon %}<i class="ph ph-{{ pl.icon }}"></i>{% endif %}
+              {{ pl.label }}
+            </div>
+            {% endfor %}
+          </div>
+          <p class="bprev-brand">Dibuat dengan <strong>LinkCraft</strong></p>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end build-body -->
+</div>
+
+<!-- ── Add Content Modal ─────────────────────────── -->
+<div class="modal" id="add-content-modal">
+  <div class="modal-backdrop" onclick="closeModal('add-content-modal')"></div>
+  <div class="modal-box modal-box--wide">
+    <div class="modal-header">
+      <h2>Tambah ke halaman</h2>
+      <button class="modal-close" onclick="closeModal('add-content-modal')"><i class="ph ph-x"></i></button>
+    </div>
+
+    <!-- Content type selector -->
+    <div id="content-type-selector">
+      <p class="modal-section-label">Konten</p>
+      <div class="content-type-grid">
+        <button class="content-type-card" onclick="showAddForm('link')">
+          <div class="content-type-icon" style="background:#4f46e5"><i class="ph ph-link-simple"></i></div>
+          <div><strong>Link</strong><p>Tambah tombol link</p></div>
+          <i class="ph ph-plus content-type-plus"></i>
+        </button>
+        <button class="content-type-card" onclick="showAddForm('text')">
+          <div class="content-type-icon" style="background:#0891b2"><i class="ph ph-text-t"></i></div>
+          <div><strong>Teks</strong><p>Tambah teks ke halaman</p></div>
+          <i class="ph ph-plus content-type-plus"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Link form -->
+    <div id="add-link-form-section" style="display:none">
+      <button class="modal-back-btn" onclick="showContentTypes()">
+        <i class="ph ph-arrow-left"></i> Kembali
+      </button>
+      <h3 style="margin-bottom:1rem">Tambah Link</h3>
+
+      <!-- Platform Grid -->
+      <div class="add-platform-grid" id="add-platform-grid">
+        {% for pl in social_platforms %}
+        <button type="button"
+          class="add-platform-btn {% if loop.first %}selected{% endif %}"
+          data-platform="{{ pl.id }}" data-icon="{{ pl.icon or '' }}"
+          data-label="{{ pl.label }}" data-placeholder="{{ pl.placeholder }}"
+          onclick="selectAddPlatform(this)">
+          {% if pl.icon %}<i class="ph ph-{{ pl.icon }}"></i>
+          {% else %}<i class="ph ph-link-simple"></i>{% endif %}
+          <span>{{ pl.label }}</span>
+        </button>
+        {% endfor %}
+      </div>
+
+      <form method="POST" action="{{ url_for('dashboard.add_page_link', page_id=page.id) }}" style="margin-top:1rem">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <input type="hidden" name="platform"  id="add-selected-platform" value="{{ social_platforms[0].id if social_platforms else 'instagram' }}" />
+        <div class="form-group">
+          <label class="form-label">Label</label>
+          <input type="text" name="label" id="add-label" class="form-input"
+            placeholder="{{ social_platforms[0].label if social_platforms else 'Instagram' }}" maxlength="255" />
+          <p class="form-hint">Kosongkan untuk pakai nama platform</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">URL *</label>
+          <div class="input-wrap">
+            <i class="ph ph-{{ social_platforms[0].icon if social_platforms and social_platforms[0].icon else 'link-simple' }} input-icon" id="add-url-icon"></i>
+            <input type="url" name="url" id="add-url" class="form-input"
+              placeholder="{{ social_platforms[0].placeholder if social_platforms else 'https://...' }}" required />
+          </div>
+          <p class="form-hint" id="add-no-icon-hint" style="display:none; color:var(--clr-warning)">
+            <i class="ph ph-warning"></i> Link ini tidak menampilkan ikon di halaman publik.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('add-content-modal')">Batal</button>
+          <button type="submit" class="btn btn-primary">Tambah Link</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Text form (placeholder — future feature) -->
+    <div id="add-text-form-section" style="display:none">
+      <button class="modal-back-btn" onclick="showContentTypes()">
+        <i class="ph ph-arrow-left"></i> Kembali
+      </button>
+      <h3 style="margin:1rem 0">Tambah Teks</h3>
+      <p style="color:var(--clr-text-muted); font-size:.85rem">Fitur teks akan segera hadir.</p>
+      <div class="modal-footer" style="margin-top:1rem">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('add-content-modal')">Tutup</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+/* ── Build layout ────────────────────────────────── */
+html, body.page-build { height: 100%; }
+.page-build { overflow: hidden; }
+
+.build-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--clr-bg);
+}
+
+/* Top Bar */
+.build-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .75rem 1.25rem;
+  background: var(--clr-surface);
+  border-bottom: 1px solid var(--clr-border);
+  flex-shrink: 0;
+  z-index: 20;
+}
+.build-topbar-left  { display: flex; align-items: center; gap: .75rem; min-width: 0; flex: 1; }
+.build-topbar-right { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; }
+.build-back-btn {
+  width: 32px; height: 32px; border-radius: var(--radius-sm);
+  background: var(--clr-surface-2); border: 1px solid var(--clr-border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--clr-text-muted); text-decoration: none; flex-shrink: 0;
+}
+.build-back-btn:hover { color: var(--clr-text); }
+.build-slug {
+  display: flex; align-items: center; gap: .35rem;
+  font-size: .82rem; color: var(--clr-text-muted); text-decoration: none;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.build-slug:hover { color: var(--clr-primary); }
+.copy-slug-btn {
+  background: none; border: none; cursor: pointer; color: inherit;
+  padding: 0; font-size: .9rem; opacity: .6; flex-shrink: 0;
+}
+.copy-slug-btn:hover { opacity: 1; }
+
+/* Tabs */
+.build-tabs { display: flex; align-items: center; gap: .15rem; }
+.build-tab {
+  background: none; border: none; cursor: pointer;
+  padding: .5rem .875rem; border-radius: var(--radius);
+  font-size: .83rem; font-weight: 600; color: var(--clr-text-muted);
+  display: flex; align-items: center; gap: .35rem;
+  transition: background var(--tr), color var(--tr);
+}
+.build-tab:hover { background: var(--clr-surface-2); color: var(--clr-text); }
+.build-tab.active { background: rgba(99,102,241,.12); color: var(--clr-primary-light); }
+
+/* Body */
+.build-body {
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Panels (left column) */
+.build-panels {
+  border-right: 1px solid var(--clr-border);
+  overflow-y: auto;
+  background: var(--clr-surface);
+}
+.build-panel { display: none; padding: 1.25rem; }
+.build-panel.active { display: block; }
+
+.build-add-row { margin-bottom: 1rem; }
+.build-link-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: .5rem; }
+.build-link-item {
+  display: flex; align-items: center; gap: .75rem;
+  background: var(--clr-surface-2); border: 1px solid var(--clr-border);
+  border-radius: var(--radius); padding: .75rem 1rem;
+  transition: border-color var(--tr);
+}
+.build-link-item:hover { border-color: var(--clr-primary-light); }
+.build-link-item.inactive { opacity: .5; }
+.drag-handle { cursor: grab; color: var(--clr-text-dim); flex-shrink: 0; font-size: .9rem; }
+.drag-handle:active { cursor: grabbing; }
+.build-link-icon {
+  width: 36px; height: 36px; border-radius: var(--radius-sm);
+  background: var(--clr-surface); border: 1px solid var(--clr-border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--clr-text-dim); font-size: 1rem; flex-shrink: 0;
+}
+.build-link-icon.has-icon { color: var(--clr-primary-light); background: rgba(99,102,241,.1); }
+.build-link-info { flex: 1; min-width: 0; }
+.build-link-label { display: block; font-size: .85rem; font-weight: 600; color: var(--clr-text); }
+.build-link-url   { display: block; font-size: .72rem; color: var(--clr-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.build-link-actions { display: flex; gap: .25rem; flex-shrink: 0; }
+.build-icon-btn {
+  width: 30px; height: 30px; border-radius: var(--radius-sm);
+  background: none; border: none; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; font-size: .9rem;
+  color: var(--clr-text-dim); transition: background var(--tr), color var(--tr);
+}
+.build-icon-btn--danger:hover { background: rgba(239,68,68,.12); color: var(--clr-danger); }
+.build-empty {
+  text-align: center; padding: 3rem 1rem;
+  color: var(--clr-text-dim); display: flex;
+  flex-direction: column; align-items: center; gap: .75rem;
+}
+.build-empty i { font-size: 2rem; }
+
+/* Design tab */
+.design-section { margin-bottom: 1.5rem; }
+.design-section-title {
+  font-size: .72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--clr-text-muted); margin: 0 0 .75rem;
+}
+.design-tmpl-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: .4rem;
+}
+.design-tmpl-swatch {
+  border: 2px solid var(--clr-border); border-radius: var(--radius-sm);
+  padding: .35rem; cursor: pointer; background: none;
+  overflow: hidden; display: flex; flex-direction: column; align-items: center;
+  transition: border-color var(--tr);
+}
+.design-tmpl-swatch:hover { border-color: var(--clr-primary-light); }
+.design-tmpl-swatch.selected { border-color: var(--clr-primary); }
+.design-color-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+.design-color-item { display: flex; flex-direction: column; align-items: center; gap: .4rem; }
+.design-color-label { font-size: .7rem; color: var(--clr-text-muted); }
+input[type="color"] {
+  width: 42px; height: 42px; border: 2px solid var(--clr-border);
+  border-radius: var(--radius); cursor: pointer; background: none; padding: 0;
+}
+.design-btn-style-row { display: flex; gap: .5rem; }
+.design-style-btn {
+  flex: 1; background: var(--clr-surface-2); border: 1.5px solid var(--clr-border);
+  border-radius: var(--radius); padding: .55rem .3rem .5rem; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: .35rem;
+  font-size: .72rem; color: var(--clr-text-muted);
+  transition: border-color var(--tr), color var(--tr);
+}
+.design-style-btn:hover { border-color: var(--clr-primary-light); }
+.design-style-btn.active { border-color: var(--clr-primary); color: var(--clr-primary-light); }
+.design-style-preview {
+  padding: .2rem .6rem; font-size: .7rem; font-weight: 700;
+  background: var(--clr-primary); color: #fff;
+}
+.design-style-pill    { border-radius: 999px; }
+.design-style-square  { border-radius: 4px; }
+.design-style-outline { border-radius: 999px; background: transparent; border: 2px solid var(--clr-primary); color: var(--clr-primary); }
+
+/* Track tab */
+.track-stats { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-bottom: 1.25rem; }
+.track-stat-card {
+  background: var(--clr-surface-2); border: 1px solid var(--clr-border);
+  border-radius: var(--radius); padding: 1rem;
+  display: flex; flex-direction: column; gap: .25rem;
+}
+.track-stat-num   { font-size: 1.75rem; font-weight: 800; color: var(--clr-text); }
+.track-stat-label { font-size: .75rem; color: var(--clr-text-muted); }
+.track-upgrade-hint {
+  display: flex; align-items: flex-start; gap: .875rem;
+  background: rgba(245,158,11,.07); border: 1px solid rgba(245,158,11,.2);
+  border-radius: var(--radius); padding: 1rem;
+  font-size: .82rem; color: var(--clr-text-muted);
+}
+.track-upgrade-hint i { font-size: 1.2rem; color: var(--clr-warning); flex-shrink: 0; margin-top: .1rem; }
+.track-upgrade-hint strong { color: var(--clr-text); display: block; margin-bottom: .3rem; }
+.track-upgrade-hint p { margin: 0; }
+
+/* Preview panel (right) */
+.build-preview-panel {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1rem; padding: 2rem; overflow-y: auto;
+  background: var(--clr-surface-2);
+}
+.build-preview-label { font-size: .78rem; font-weight: 600; color: var(--clr-text-muted); display: flex; align-items: center; gap: .35rem; }
+.build-phone-frame {
+  width: 260px; border: 3px solid var(--clr-border);
+  border-radius: 2rem; overflow: hidden; box-shadow: var(--shadow-lg);
+}
+.build-phone-screen {
+  min-height: 480px; padding: 2rem .875rem 1.5rem;
+  display: flex; flex-direction: column; align-items: center; gap: .5rem;
+  transition: background var(--tr);
+}
+.bprev-avatar {
+  width: 68px; height: 68px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; font-weight: 700; color: #fff; overflow: hidden;
+  transition: background var(--tr);
+}
+.bprev-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.bprev-title { font-size: .95rem; font-weight: 700; text-align: center; margin: 0; transition: color var(--tr); }
+.bprev-bio   { font-size: .72rem; text-align: center; opacity: .7; margin: 0; transition: color var(--tr); }
+.bprev-links { width: 100%; display: flex; flex-direction: column; gap: .45rem; margin-top: .35rem; }
+.bprev-btn {
+  font-size: .75rem; font-weight: 600; text-align: center;
+  padding: .55rem 1rem; display: flex; align-items: center; justify-content: center; gap: .35rem;
+  transition: background var(--tr), color var(--tr), border-color var(--tr);
+}
+.bprev-brand { margin-top: auto; font-size: .6rem; opacity: .3; }
+
+/* Add Content Modal */
+.modal-box--wide { max-width: 600px; }
+.modal-section-label { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--clr-text-muted); margin-bottom: .75rem; }
+.content-type-grid { display: flex; flex-direction: column; gap: .5rem; }
+.content-type-card {
+  display: flex; align-items: center; gap: 1rem;
+  background: var(--clr-surface-2); border: 1.5px solid var(--clr-border);
+  border-radius: var(--radius); padding: .875rem 1rem; cursor: pointer;
+  text-align: left; transition: border-color var(--tr), background var(--tr);
+}
+.content-type-card:hover { border-color: var(--clr-primary); background: rgba(99,102,241,.06); }
+.content-type-icon {
+  width: 44px; height: 44px; border-radius: var(--radius);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; color: #fff; flex-shrink: 0;
+}
+.content-type-card > div { flex: 1; }
+.content-type-card strong { color: var(--clr-text); font-size: .9rem; display: block; }
+.content-type-card p { color: var(--clr-text-muted); font-size: .78rem; margin: .15rem 0 0; }
+.content-type-plus { color: var(--clr-text-dim); font-size: 1rem; flex-shrink: 0; }
+.modal-back-btn {
+  background: none; border: none; cursor: pointer; color: var(--clr-text-muted);
+  font-size: .82rem; display: flex; align-items: center; gap: .35rem;
+  padding: 0; margin-bottom: .75rem;
+}
+.modal-back-btn:hover { color: var(--clr-text); }
+.add-platform-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: .35rem;
+}
+.add-platform-btn {
+  background: var(--clr-surface-2); border: 1.5px solid var(--clr-border);
+  border-radius: var(--radius); padding: .55rem .2rem .45rem;
+  cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: .2rem;
+  color: var(--clr-text-muted); transition: border-color var(--tr), color var(--tr), background var(--tr);
+}
+.add-platform-btn i    { font-size: 1.1rem; }
+.add-platform-btn span { font-size: .58rem; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; padding: 0 .1rem; }
+.add-platform-btn:hover { border-color: var(--clr-primary-light); color: var(--clr-text); }
+.add-platform-btn.selected { border-color: var(--clr-primary); background: rgba(99,102,241,.12); color: var(--clr-primary-light); }
+
+@media (max-width: 900px) {
+  .build-body { grid-template-columns: 1fr; }
+  .build-preview-panel { display: none; }
+}
+</style>
+
+<script>
+// ── Tab switching ──────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.build-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.build-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`.build-tab[onclick="switchTab('${tab}')"]`).classList.add('active');
+  document.getElementById(`panel-${tab}`).classList.add('active');
+}
+
+// ── Live preview refs ──────────────────────────────────────────────
+const previewScreen = document.getElementById('build-preview-screen');
+const prevTitle     = document.getElementById('bprev-title');
+const prevBio       = document.getElementById('bprev-bio');
+const prevAvatar    = document.getElementById('bprev-avatar');
+const prevLinks     = document.getElementById('bprev-links');
+
+let currentBtnStyle = '{{ style }}';
+
+function applyPreviewTheme(bg, btn, text) {
+  previewScreen.style.background   = bg;
+  prevTitle.style.color            = text;
+  prevBio.style.color              = text;
+  prevAvatar.style.background      = btn;
+  prevLinks.querySelectorAll('.bprev-btn').forEach(el => {
+    if (currentBtnStyle === 'outline') {
+      el.style.background  = 'transparent';
+      el.style.border      = `2px solid ${btn}`;
+      el.style.color       = btn;
+      el.style.borderRadius = '999px';
+    } else if (currentBtnStyle === 'square') {
+      el.style.background  = btn;
+      el.style.border      = 'none';
+      el.style.color       = text;
+      el.style.borderRadius = '8px';
+    } else {
+      el.style.background  = btn;
+      el.style.border      = 'none';
+      el.style.color       = text;
+      el.style.borderRadius = '999px';
+    }
+  });
+}
+
+// ── Design form color pickers ──────────────────────────────────────
+function updateDesignColor() {
+  const bg  = document.getElementById('d-pick-bg').value;
+  const btn = document.getElementById('d-pick-btn').value;
+  const txt = document.getElementById('d-pick-text').value;
+  document.getElementById('d-bg').value   = bg;
+  document.getElementById('d-btn').value  = btn;
+  document.getElementById('d-text').value = txt;
+  document.getElementById('d-tmpl').value = '';
+  document.querySelectorAll('.design-tmpl-swatch').forEach(s => s.classList.remove('selected'));
+  applyPreviewTheme(bg, btn, txt);
+}
+
+function applyDesignTemplate(card) {
+  document.querySelectorAll('.design-tmpl-swatch').forEach(s => s.classList.remove('selected'));
+  card.classList.add('selected');
+  const bg  = card.dataset.bg;
+  const btn = card.dataset.btn;
+  const txt = card.dataset.text;
+  const sty = card.dataset.style;
+  document.getElementById('d-pick-bg').value   = bg;
+  document.getElementById('d-pick-btn').value  = btn;
+  document.getElementById('d-pick-text').value = txt;
+  document.getElementById('d-bg').value    = bg;
+  document.getElementById('d-btn').value   = btn;
+  document.getElementById('d-text').value  = txt;
+  document.getElementById('d-tmpl').value  = card.dataset.id;
+  setBtnStyleById(sty);
+  applyPreviewTheme(bg, btn, txt);
+}
+
+function setBtnStyleById(style) {
+  currentBtnStyle = style;
+  document.getElementById('d-style').value = style;
+  document.querySelectorAll('.design-style-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.style === style);
+  });
+  const btn = document.getElementById('d-pick-btn').value;
+  const txt = document.getElementById('d-pick-text').value;
+  applyPreviewTheme(document.getElementById('d-pick-bg').value, btn, txt);
+}
+
+function setBtnStyle(b) {
+  document.getElementById('d-tmpl').value = '';
+  document.querySelectorAll('.design-tmpl-swatch').forEach(s => s.classList.remove('selected'));
+  setBtnStyleById(b.dataset.style);
+}
+
+function updateAvatar(url) {
+  const existing = prevAvatar.querySelector('img');
+  const span     = prevAvatar.querySelector('span') || document.getElementById('bprev-initial');
+  if (url) {
+    if (existing) { existing.src = url; existing.style.display = ''; }
+    else { const img = document.createElement('img'); img.src = url; prevAvatar.appendChild(img); }
+    if (span) span.style.display = 'none';
+  } else {
+    if (existing) existing.style.display = 'none';
+    if (span) span.style.display = '';
+  }
+}
+
+// ── Add content modal ──────────────────────────────────────────────
+function showContentTypes() {
+  document.getElementById('content-type-selector').style.display = '';
+  document.getElementById('add-link-form-section').style.display  = 'none';
+  document.getElementById('add-text-form-section').style.display  = 'none';
+}
+function showAddForm(type) {
+  document.getElementById('content-type-selector').style.display = 'none';
+  document.getElementById(`add-${type}-form-section`).style.display = '';
+}
+
+// Platform selector in Add modal
+function selectAddPlatform(btn) {
+  document.querySelectorAll('.add-platform-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  const icon  = btn.dataset.icon;
+  document.getElementById('add-selected-platform').value = btn.dataset.platform;
+  document.getElementById('add-url').placeholder         = btn.dataset.placeholder;
+  document.getElementById('add-label').placeholder       = btn.dataset.label;
+  document.getElementById('add-url-icon').className      = `ph ph-${icon || 'link-simple'} input-icon`;
+  document.getElementById('add-no-icon-hint').style.display = icon ? 'none' : '';
+}
+
+// Reset modal to type selector on open
+document.getElementById('add-content-modal')?.addEventListener('transitionend', () => {});
+const origOpen = window.openModal;
+window.openModal = function(id) {
+  if (id === 'add-content-modal') showContentTypes();
+  if (origOpen) origOpen(id); else {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('open');
+  }
+};
+
+// ── Drag-to-reorder build list ─────────────────────────────────────
+const buildList = document.getElementById('build-link-list');
+if (buildList) {
+  let dragged = null;
+  buildList.addEventListener('dragstart', e => {
+    dragged = e.target.closest('.build-link-item');
+    if (dragged) dragged.style.opacity = '.4';
+  });
+  buildList.addEventListener('dragend', () => {
+    if (dragged) dragged.style.opacity = '';
+    dragged = null;
+    const order = [...buildList.querySelectorAll('.build-link-item')].map(el => el.dataset.id);
+    fetch(buildList.dataset.reorderUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
+      body: JSON.stringify({ order }),
+    });
+  });
+  buildList.querySelectorAll('.build-link-item').forEach(item => item.setAttribute('draggable', 'true'));
+  buildList.addEventListener('dragover', e => {
+    e.preventDefault();
+    const after = [...buildList.querySelectorAll('.build-link-item:not([style*="opacity"])')].reduce((closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = e.clientY - box.top - box.height / 2;
+      return (offset < 0 && offset > closest.offset) ? { offset, element: child } : closest;
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+    if (dragged) after ? buildList.insertBefore(dragged, after) : buildList.appendChild(dragged);
+  });
+}
+
+// ── Copy helper ────────────────────────────────────────────────────
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-slug-btn i');
+    if (btn) { btn.className = 'ph ph-check'; setTimeout(() => btn.className = 'ph ph-copy', 1500); }
+  });
+}
+</script>
+{% endblock %}

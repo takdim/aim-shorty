@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% block title %}Pilih Template — LinkCraft{% endblock %}
+{% block body_class %}page-wizard{% endblock %}
+
+{% block body %}
+<div class="wizard-layout">
+
+  <!-- Sidebar -->
+  <aside class="wizard-sidebar">
+    <a href="{{ url_for('dashboard.pages') }}" class="wizard-back">
+      <i class="ph ph-arrow-left"></i>
+    </a>
+    <div class="wizard-sidebar-content">
+      <h2 class="wizard-title">Pilih Template</h2>
+      <p class="wizard-subtitle">Anda bisa mengubah konten, warna, dan tampilan nanti.</p>
+
+      <!-- Category filters (visual only) -->
+      <nav class="wizard-cats">
+        <button class="wizard-cat-btn active" data-cat="all" onclick="filterCat(this)">Semua template</button>
+        <button class="wizard-cat-btn" data-cat="link-in-bio" onclick="filterCat(this)">Link-in-bio</button>
+        <button class="wizard-cat-btn" data-cat="bisnis" onclick="filterCat(this)">Bisnis</button>
+        <button class="wizard-cat-btn" data-cat="kreator" onclick="filterCat(this)">Kreator</button>
+        <button class="wizard-cat-btn" data-cat="minimal" onclick="filterCat(this)">Minimal</button>
+      </nav>
+    </div>
+
+    <!-- Start from scratch option -->
+    <a href="{{ url_for('dashboard.configure_page_wizard', template=landing_templates[0].id) }}"
+       class="btn btn-outline-white wizard-scratch-btn">
+      <i class="ph ph-plus"></i> Mulai dari awal
+    </a>
+  </aside>
+
+  <!-- Template Grid -->
+  <div class="wizard-main">
+    <div class="tmpl-grid-full" id="tmpl-grid">
+      {% set cats = [
+        ('link-in-bio', 'link-in-bio'),
+        ('bisnis', 'bisnis'),
+        ('kreator', 'kreator'),
+        ('link-in-bio', 'minimal'),
+        ('minimal', 'minimal'),
+        ('bisnis', 'bisnis'),
+        ('kreator', 'kreator'),
+        ('minimal', 'minimal')
+      ] %}
+      {% for tmpl in landing_templates %}
+      {% set cat = cats[loop.index0 % cats|length][0] %}
+      <a href="{{ url_for('dashboard.configure_page_wizard', template=tmpl.id) }}"
+         class="tmpl-full-card" data-cat="{{ cat }}">
+        <!-- Mini phone preview -->
+        <div class="tmpl-phone" style="background:{{ tmpl.bg }}">
+          <div class="tmpl-phone-inner">
+            <div class="tmph-avatar" style="background:{{ tmpl.btn }}"></div>
+            <div class="tmph-title" style="color:{{ tmpl.text }}">Your Name</div>
+            <div class="tmph-bio" style="color:{{ tmpl.text }}">Your description here</div>
+            <div class="tmph-links">
+              {% for label in ['Website', 'Instagram', 'TikTok'] %}
+              {% if tmpl.btn_style == 'outline' %}
+              <div class="tmph-btn" style="background:transparent;border:1.5px solid {{ tmpl.btn }};color:{{ tmpl.btn }};border-radius:999px">{{ label }}</div>
+              {% elif tmpl.btn_style == 'square' %}
+              <div class="tmph-btn" style="background:{{ tmpl.btn }};color:{{ tmpl.text }};border-radius:6px">{{ label }}</div>
+              {% else %}
+              <div class="tmph-btn" style="background:{{ tmpl.btn }};color:{{ tmpl.text }};border-radius:999px">{{ label }}</div>
+              {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <div class="tmpl-card-label">{{ tmpl.name }}</div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+
+<style>
+/* ── Wizard Layout ──────────────────────────────────── */
+.page-wizard { background: var(--clr-bg); min-height: 100vh; }
+
+.wizard-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
+}
+
+/* Sidebar */
+.wizard-sidebar {
+  background: var(--clr-surface);
+  border-right: 1px solid var(--clr-border);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+.wizard-back {
+  width: 36px; height: 36px;
+  border-radius: var(--radius);
+  background: var(--clr-surface-2);
+  border: 1px solid var(--clr-border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--clr-text-muted); text-decoration: none; font-size: 1rem;
+  flex-shrink: 0;
+}
+.wizard-back:hover { color: var(--clr-text); background: var(--clr-border); }
+.wizard-sidebar-content { flex: 1; display: flex; flex-direction: column; gap: 1rem; }
+.wizard-title { font-size: 1.25rem; font-weight: 700; color: var(--clr-text); margin: 0; }
+.wizard-subtitle { font-size: .82rem; color: var(--clr-text-muted); margin: 0; line-height: 1.5; }
+.wizard-cats { display: flex; flex-direction: column; gap: .25rem; margin-top: .5rem; }
+.wizard-cat-btn {
+  background: none; border: none; cursor: pointer;
+  padding: .5rem .75rem; border-radius: var(--radius-sm);
+  text-align: left; font-size: .85rem; color: var(--clr-text-muted);
+  transition: background var(--tr), color var(--tr);
+}
+.wizard-cat-btn:hover { background: var(--clr-surface-2); color: var(--clr-text); }
+.wizard-cat-btn.active { background: rgba(99,102,241,.12); color: var(--clr-primary-light); font-weight: 600; }
+.wizard-scratch-btn {
+  border: 1.5px solid var(--clr-border); color: var(--clr-text-muted);
+  padding: .65rem 1rem; border-radius: var(--radius); text-align: center;
+  text-decoration: none; font-size: .85rem; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; gap: .4rem;
+  transition: border-color var(--tr), color var(--tr);
+}
+.wizard-scratch-btn:hover { border-color: var(--clr-primary); color: var(--clr-text); }
+
+/* Main Grid */
+.wizard-main {
+  padding: 2rem;
+  overflow-y: auto;
+  max-height: 100vh;
+}
+.tmpl-grid-full {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.25rem;
+}
+
+/* Template Card */
+.tmpl-full-card {
+  display: flex; flex-direction: column; gap: .6rem;
+  text-decoration: none; cursor: pointer;
+}
+.tmpl-full-card.hidden { display: none; }
+.tmpl-phone {
+  border-radius: 1.25rem;
+  overflow: hidden;
+  border: 2px solid rgba(255,255,255,.06);
+  aspect-ratio: 9/16;
+  transition: border-color var(--tr), box-shadow var(--tr), transform var(--tr);
+}
+.tmpl-full-card:hover .tmpl-phone {
+  border-color: var(--clr-primary);
+  box-shadow: 0 0 0 3px rgba(99,102,241,.2);
+  transform: translateY(-2px);
+}
+.tmpl-phone-inner {
+  padding: 1.25rem .875rem 1rem;
+  height: 100%;
+  display: flex; flex-direction: column; align-items: center; gap: .5rem;
+}
+.tmph-avatar {
+  width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0;
+}
+.tmph-title { font-size: .8rem; font-weight: 700; text-align: center; }
+.tmph-bio   { font-size: .62rem; text-align: center; opacity: .65; }
+.tmph-links { width: 100%; display: flex; flex-direction: column; gap: .4rem; margin-top: .25rem; }
+.tmph-btn   { font-size: .62rem; font-weight: 600; text-align: center; padding: .35rem .5rem; }
+.tmpl-card-label {
+  font-size: .8rem; font-weight: 600; color: var(--clr-text-muted); text-align: center;
+}
+.tmpl-full-card:hover .tmpl-card-label { color: var(--clr-text); }
+
+@media (max-width: 700px) {
+  .wizard-layout { grid-template-columns: 1fr; }
+  .wizard-sidebar { height: auto; position: static; }
+}
+</style>
+
+<script>
+function filterCat(btn) {
+  document.querySelectorAll('.wizard-cat-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const cat = btn.dataset.cat;
+  document.querySelectorAll('.tmpl-full-card').forEach(card => {
+    card.classList.toggle('hidden', cat !== 'all' && card.dataset.cat !== cat);
+  });
+}
+</script>
+{% endblock %}

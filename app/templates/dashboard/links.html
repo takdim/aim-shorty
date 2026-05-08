@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+{% block title %}Short Links — LinkCraft{% endblock %}
+{% block body_class %}page-dashboard{% endblock %}
+
+{% block body %}
+{% include "dashboard/_sidebar.html" %}
+<main class="dashboard-main">
+  {% include "dashboard/_topbar.html" %}
+  <div class="dashboard-content">
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div>
+        <h1 class="page-title"><i class="ph ph-link-simple"></i> Short Links</h1>
+        <p class="page-subtitle">Kelola semua short link Anda</p>
+      </div>
+      <div style="display:flex; gap:.75rem">
+        {% if current_user.plan == 'pro' %}
+        <button class="btn btn-outline" onclick="openModal('bulk-link-modal')">
+          <i class="ph ph-files"></i> Bulk Create
+        </button>
+        {% else %}
+        <a href="{{ url_for('billing.plans') }}" class="btn btn-outline" style="opacity:.6; cursor:help" title="Fitur ini hanya tersedia di paket Pro">
+          <i class="ph ph-lock"></i> Bulk Create (Pro)
+        </a>
+        {% endif %}
+        <button class="btn btn-primary" onclick="openModal('create-link-modal')">
+          <i class="ph ph-plus"></i> Buat Link Baru
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <form class="filter-bar" method="GET">
+      <div class="input-wrap input-wrap--sm">
+        <i class="ph ph-magnifying-glass input-icon"></i>
+        <input type="text" name="q" class="form-input" placeholder="Cari link..." value="{{ search }}" />
+      </div>
+      <select name="status" class="form-select">
+        <option value="">Semua Status</option>
+        <option value="active"   {% if status=='active' %}selected{% endif %}>Aktif</option>
+        <option value="inactive" {% if status=='inactive' %}selected{% endif %}>Nonaktif</option>
+      </select>
+      <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+    </form>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Short URL</th>
+            <th>Original URL</th>
+            <th>Klik</th>
+            <th>Status</th>
+            <th>Dibuat</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for link in pagination.items %}
+          <tr>
+            <td>
+              <a href="{{ link.short_url }}" target="_blank" class="link-slug">
+                <i class="ph ph-arrow-square-out"></i> /{{ link.slug }}
+              </a>
+              <button class="btn-copy" onclick="copyText('{{ link.short_url }}')" title="Salin">
+                <i class="ph ph-copy"></i>
+              </button>
+            </td>
+            <td class="url-cell">
+              <span title="{{ link.original_url }}">{{ link.original_url | truncate(50) }}</span>
+            </td>
+            <td><span class="badge badge-clicks">{{ link.total_clicks }}</span></td>
+            <td>
+              <label class="toggle-switch" title="{{ 'Nonaktifkan' if link.is_active else 'Aktifkan' }}">
+                <input type="checkbox" {% if link.is_active %}checked{% endif %}
+                  onchange="toggleLink({{ link.id }}, this)" />
+                <span class="toggle-slider"></span>
+              </label>
+            </td>
+            <td class="date-cell">{{ link.created_at.strftime('%d %b %Y') }}</td>
+            <td>
+              <div class="action-btns">
+                <form method="POST" action="{{ url_for('dashboard.delete_link', link_id=link.id) }}"
+                  onsubmit="return confirm('Hapus link ini?')">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                  <button type="submit" class="btn-icon btn-icon--danger" title="Hapus">
+                    <i class="ph ph-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="empty-state">
+              <i class="ph ph-link-break"></i>
+              <p>Belum ada short link. <button class="btn-link" onclick="openModal('create-link-modal')">Buat sekarang</button></p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination.pages > 1 %}
+    <div class="pagination">
+      {% if pagination.has_prev %}
+        <a href="?page={{ pagination.prev_num }}&q={{ search }}&status={{ status }}" class="btn btn-ghost btn-sm">
+          <i class="ph ph-arrow-left"></i> Prev
+        </a>
+      {% endif %}
+      <span class="pagination-info">{{ pagination.page }} / {{ pagination.pages }}</span>
+      {% if pagination.has_next %}
+        <a href="?page={{ pagination.next_num }}&q={{ search }}&status={{ status }}" class="btn btn-ghost btn-sm">
+          Next <i class="ph ph-arrow-right"></i>
+        </a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+</main>
+
+<!-- Create Link Modal -->
+<div class="modal" id="create-link-modal">
+  <div class="modal-backdrop" onclick="closeModal('create-link-modal')"></div>
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>Buat Short Link</h2>
+      <button class="modal-close" onclick="closeModal('create-link-modal')"><i class="ph ph-x"></i></button>
+    </div>
+    <form method="POST" action="{{ url_for('dashboard.create_link') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="form-group">
+        <label class="form-label">URL Asli *</label>
+        <div class="input-wrap">
+          <i class="ph ph-link input-icon"></i>
+          <input type="url" name="original_url" class="form-input" placeholder="https://contoh.com/halaman-sangat-panjang" required id="pending-url-input" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Judul (opsional)</label>
+        <input type="text" name="title" class="form-input" placeholder="Nama untuk link ini" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Custom Alias (opsional)</label>
+        <div class="input-wrap">
+          <span class="input-prefix">linkcraft.io/</span>
+          <input type="text" name="custom_alias" id="custom-alias" class="form-input form-input--prefix"
+            placeholder="alias-kustom" oninput="checkSlug(this.value)" />
+        </div>
+        <p class="form-hint" id="slug-status"></p>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tanggal Kedaluwarsa (opsional)</label>
+        <input type="datetime-local" name="expires_at" class="form-input" />
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('create-link-modal')">Batal</button>
+        <button type="submit" class="btn btn-primary"><i class="ph ph-magic-wand"></i> Generate</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Bulk Link Modal (Pro only) -->
+{% if current_user.plan == 'pro' %}
+<div class="modal" id="bulk-link-modal">
+  <div class="modal-backdrop" onclick="closeModal('bulk-link-modal')"></div>
+  <div class="modal-box" style="max-width:600px">
+    <div class="modal-header">
+      <h2>Bulk Creation</h2>
+      <button class="modal-close" onclick="closeModal('bulk-link-modal')"><i class="ph ph-x"></i></button>
+    </div>
+    
+    <!-- Tab Switcher -->
+    <div style="display:flex; gap:1rem; margin-bottom:1.5rem; border-bottom:1px solid var(--clr-border); padding-bottom:.5rem">
+      <button onclick="switchBulkTab('csv')" id="tab-csv" class="btn btn-sm btn-primary">CSV Upload</button>
+      <button onclick="switchBulkTab('manual')" id="tab-manual" class="btn btn-sm btn-ghost">Manual Form</button>
+    </div>
+
+    <!-- CSV Upload Tab -->
+    <div id="bulk-csv-content">
+      <form method="POST" action="{{ url_for('dashboard.bulk_create_links') }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <div style="background:var(--clr-bg-input); padding:1rem; border-radius:.5rem; margin-bottom:1.5rem">
+          <p style="font-size:.8rem; color:var(--clr-text-dim); margin-bottom:.75rem">Gunakan format CSV yang benar atau download template di bawah:</p>
+          <a href="{{ url_for('dashboard.download_bulk_template') }}" class="btn btn-outline btn-sm" style="font-size:.7rem">
+            <i class="ph ph-download-simple"></i> Download Template .CSV
+          </a>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Pilih File CSV</label>
+          <input type="file" name="file" class="form-input" accept=".csv" required />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('bulk-link-modal')">Batal</button>
+          <button type="submit" class="btn btn-primary"><i class="ph ph-upload-simple"></i> Upload & Proses</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Manual Form Tab -->
+    <div id="bulk-manual-content" style="display:none">
+      <form method="POST" action="{{ url_for('dashboard.bulk_create_links') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <div class="form-group">
+          <label class="form-label">Berapa banyak link yang ingin dibuat?</label>
+          <div style="display:flex; gap:.5rem">
+            <input type="number" id="bulk-count" class="form-input" value="3" min="1" max="10">
+            <button type="button" class="btn btn-secondary" onclick="generateBulkFields()">Generate</button>
+          </div>
+        </div>
+
+        <div id="bulk-fields-container" style="max-height:300px; overflow-y:auto; padding-right:.5rem; margin-bottom:1.5rem">
+          <!-- Fields will appear here -->
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('bulk-link-modal')">Batal</button>
+          <button type="submit" class="btn btn-primary"><i class="ph ph-magic-wand"></i> Buat Semua Link</button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Pre-fill URL from landing page
+window.addEventListener('DOMContentLoaded', () => {
+  const pending = sessionStorage.getItem('pendingUrl');
+  if (pending) {
+    document.getElementById('pending-url-input').value = pending;
+    sessionStorage.removeItem('pendingUrl');
+    openModal('create-link-modal');
+  }
+});
+
+let slugTimeout;
+function checkSlug(value) {
+  const status = document.getElementById('slug-status');
+  if (!value) { status.textContent = ''; return; }
+  clearTimeout(slugTimeout);
+  slugTimeout = setTimeout(async () => {
+    const res = await fetch(`/api/links/check-slug?slug=${encodeURIComponent(value)}`);
+    const data = await res.json();
+    status.textContent = data.available ? '✅ Alias tersedia' : '❌ Alias sudah digunakan';
+    status.className   = `form-hint ${data.available ? 'form-hint--success' : 'form-hint--error'}`;
+  }, 400);
+}
+
+function toggleLink(id, checkbox) {
+  fetch(`/dashboard/links/${id}/toggle`, {
+    method: 'POST',
+    headers: {'X-CSRFToken': '{{ csrf_token() }}'},
+  });
+}
+
+// Bulk Actions
+function switchBulkTab(tab) {
+  const csv = document.getElementById('bulk-csv-content');
+  const manual = document.getElementById('bulk-manual-content');
+  const tabCsv = document.getElementById('tab-csv');
+  const tabManual = document.getElementById('tab-manual');
+
+  if (tab === 'csv') {
+    csv.style.display = 'block';
+    manual.style.display = 'none';
+    tabCsv.className = 'btn btn-sm btn-primary';
+    tabManual.className = 'btn btn-sm btn-ghost';
+  } else {
+    csv.style.display = 'none';
+    manual.style.display = 'block';
+    tabCsv.className = 'btn btn-sm btn-ghost';
+    tabManual.className = 'btn btn-sm btn-primary';
+    generateBulkFields(); // Init first fields
+  }
+}
+
+function generateBulkFields() {
+  const count = parseInt(document.getElementById('bulk-count').value) || 1;
+  const container = document.getElementById('bulk-fields-container');
+  container.innerHTML = '';
+
+  for (let i = 0; i < count; i++) {
+    const row = document.createElement('div');
+    row.style.background = 'var(--clr-bg-input)';
+    row.style.padding = '1rem';
+    row.style.borderRadius = '.5rem';
+    row.style.marginBottom = '1rem';
+    row.style.border = '1px solid var(--clr-border)';
+    
+    row.innerHTML = `
+      <p style="font-weight:700; margin-bottom:.75rem; font-size:.8rem; color:var(--clr-primary)">Link #${i+1}</p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:.75rem">
+        <div class="form-group" style="grid-column:1/-1; margin:0">
+          <label class="form-label" style="font-size:.75rem">URL Asli *</label>
+          <input type="url" name="urls[]" class="form-input" placeholder="https://..." required>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-label" style="font-size:.75rem">Judul</label>
+          <input type="text" name="titles[]" class="form-input" placeholder="Nama link">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-label" style="font-size:.75rem">Alias</label>
+          <input type="text" name="aliases[]" class="form-input" placeholder="alias-kustom">
+        </div>
+      </div>
+    `;
+    container.appendChild(row);
+  }
+}
+</script>
+{% endblock %}

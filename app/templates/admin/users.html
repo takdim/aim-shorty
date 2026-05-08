@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Manajemen User — Admin LinkCraft{% endblock %}
+{% block body_class %}page-dashboard page-admin{% endblock %}
+
+{% block body %}
+{% include "dashboard/_sidebar.html" %}
+
+<main class="dashboard-main">
+  {% include "dashboard/_topbar.html" %}
+  <div class="dashboard-content">
+
+    <div class="page-header">
+      <div>
+        <h1 class="page-title"><i class="ph ph-users" style="color:var(--clr-primary)"></i> Manajemen User</h1>
+        <p class="page-subtitle">Total {{ pagination.total }} pengguna terdaftar</p>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <form method="GET" class="search-form" style="margin-bottom:1.5rem; display:flex; gap:.75rem">
+      <div class="form-group" style="flex:1; margin:0">
+        <input type="text" name="q" value="{{ search }}" placeholder="Cari nama atau email..." class="form-control">
+      </div>
+      <button type="submit" class="btn btn-primary">Cari</button>
+      {% if search %}<a href="{{ url_for('admin.users') }}" class="btn btn-ghost">Reset</a>{% endif %}
+    </form>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>User</th>
+            <th>Role</th>
+            <th>Paket</th>
+            <th>Status</th>
+            <th>Bergabung</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in pagination.items %}
+          <tr>
+            <td style="color:var(--clr-text-dim); font-size:.8rem">{{ u.id }}</td>
+            <td>
+              <div style="display:flex; align-items:center; gap:.75rem">
+                <div class="user-avatar" style="width:2rem; height:2rem; font-size:.8rem; flex-shrink:0">{{ u.name[0].upper() }}</div>
+                <div>
+                  <div style="font-weight:600">{{ u.name }}</div>
+                  <div style="font-size:.75rem; color:var(--clr-text-dim)">{{ u.email }}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              {% if u.role.value == 'admin' or u.role.value == 'superadmin' %}
+              <span class="badge" style="background:rgba(239,68,68,.15); color:#ef4444">{{ u.role.value }}</span>
+              {% else %}
+              <span class="badge badge-secondary">{{ u.role.value }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <!-- Inline set plan -->
+              <form method="POST" action="{{ url_for('admin.set_plan', user_id=u.id) }}" style="display:flex; gap:.4rem; align-items:center">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <select name="plan" class="form-control" style="padding:.25rem .5rem; font-size:.8rem; height:auto">
+                  <option value="free"    {% if u.plan=='free'    %}selected{% endif %}>Free</option>
+                  <option value="starter" {% if u.plan=='starter' %}selected{% endif %}>Starter</option>
+                  <option value="pro"     {% if u.plan=='pro'     %}selected{% endif %}>Pro</option>
+                </select>
+                <button type="submit" class="btn btn-primary btn-sm" style="padding:.25rem .6rem">✓</button>
+              </form>
+            </td>
+            <td>
+              {% if u.is_email_verified %}
+              <span class="badge badge-success">Aktif</span>
+              {% else %}
+              <span class="badge" style="background:rgba(239,68,68,.15); color:#ef4444">Suspend</span>
+              {% endif %}
+            </td>
+            <td class="date-cell">{{ u.created_at.strftime('%d %b %Y') }}</td>
+            <td>
+              <div style="display:flex; gap:.5rem; flex-wrap: wrap">
+                {% if u.id != current_user.id and u.role.value != 'superadmin' %}
+                <!-- Suspend/Aktifkan -->
+                <form method="POST" action="{{ url_for('admin.toggle_suspend', user_id=u.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-sm {% if u.is_email_verified %}btn-ghost{% else %}btn-primary{% endif %}" style="font-size:.75rem; padding:.3rem .6rem">
+                    {% if u.is_email_verified %}<i class="ph ph-lock"></i> Suspend{% else %}<i class="ph ph-lock-open"></i> Aktifkan{% endif %}
+                  </button>
+                </form>
+                <!-- Hapus -->
+                <form method="POST" action="{{ url_for('admin.delete_user', user_id=u.id) }}" onsubmit="return confirm('Yakin ingin menghapus akun {{ u.name }}? Semua data akan terhapus!')">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-sm" style="background:rgba(239,68,68,.1); color:#ef4444; font-size:.75rem; padding:.3rem .6rem">
+                    <i class="ph ph-trash"></i>
+                  </button>
+                </form>
+                {% else %}
+                <span style="color:var(--clr-text-dim); font-size:.8rem">—</span>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+          {% if not pagination.items %}
+          <tr><td colspan="7" style="text-align:center; padding:3rem; color:var(--clr-text-dim)">Tidak ada user ditemukan.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination.pages > 1 %}
+    <div style="display:flex; justify-content:center; gap:.5rem; margin-top:1.5rem">
+      {% if pagination.has_prev %}
+      <a href="{{ url_for('admin.users', page=pagination.prev_num, q=search) }}" class="btn btn-ghost btn-sm">‹ Sebelumnya</a>
+      {% endif %}
+      <span style="padding:.5rem 1rem; color:var(--clr-text-dim); font-size:.85rem">Hal {{ pagination.page }} / {{ pagination.pages }}</span>
+      {% if pagination.has_next %}
+      <a href="{{ url_for('admin.users', page=pagination.next_num, q=search) }}" class="btn btn-ghost btn-sm">Berikutnya ›</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+</main>
+{% endblock %}

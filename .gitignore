@@ -1,0 +1,148 @@
+# ── Environment Variables ─────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+.env.development
+
+# ── Virtual Environment ───────────────────────────────────────────────────
+venv/
+env/
+ENV/
+.venv/
+.venv
+
+# ── Python ─────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.pytest_cache/
+.pyc
+.pyo
+
+# ── Flask ──────────────────────────────────────────────────────────────────
+instance/
+.webassets-cache
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Database & Migrations ──────────────────────────────────────────────────
+*.sql
+*.sql.gz
+database.db
+*.bak
+migrations/
+
+# ── IDE & Editor ───────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+.atom/
+.code-workspace
+
+# ── OS Files ───────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ── Logs ───────────────────────────────────────────────────────────────────
+*.log
+logs/
+*.log.*
+
+# ── Temporary & Cache Files ────────────────────────────────────────────────
+*.tmp
+*.temp
+tmp/
+temp/
+.cache/
+*.cache
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ── Generated Files ────────────────────────────────────────────────────────
+app/static/qr_codes/
+!app/static/qr_codes/.gitkeep
+uploads/
+app/uploads/
+!app/uploads/.gitkeep
+
+# ── Node (jika ada frontend tooling) ───────────────────────────────────────
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# ── Coverage Reports ──────────────────────────────────────────────────────
+htmlcov/
+.coverage
+.coverage.*
+.covrc
+
+# ── IPython Notebooks ─────────────────────────────────────────────────────
+.ipynb_checkpoints
+*.ipynb
+
+# ── Celery ─────────────────────────────────────────────────────────────────
+celerybeat-schedule
+celerybeat.pid
+
+# ── Redis ──────────────────────────────────────────────────────────────────
+dump.rdb
+*.rdb
+
+# ── Sensitive & Secret Files ──────────────────────────────────────────────
+*.pem
+*.key
+*.crt
+*.p12
+secrets.json
+credentials.json
+private_key.json
+.ssh/
+
+# ── Build & Distribution ──────────────────────────────────────────────────
+build/
+dist/
+*.whl
+
+# ── Dependency Lock Files (komit requirements.txt, bukan lock files) ──────
+Pipfile.lock
+poetry.lock

@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+{% block title %}Konfigurasi Halaman — LinkCraft{% endblock %}
+{% block body_class %}page-wizard{% endblock %}
+
+{% block body %}
+<div class="configure-layout">
+
+  <!-- Left: Form -->
+  <div class="configure-form-panel">
+    <a href="{{ url_for('dashboard.new_page_wizard') }}" class="wizard-back">
+      <i class="ph ph-arrow-left"></i> Kembali
+    </a>
+
+    <h2 class="configure-title">Konfigurasi halaman Anda</h2>
+    <p class="configure-subtitle">Setup URL halaman dan QR Code untuk mendapatkan pengunjung.</p>
+
+    <form method="POST" action="{{ url_for('dashboard.create_page') }}" id="configure-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <input type="hidden" name="template_id" value="{{ tmpl.id }}" />
+
+      <!-- Page URL -->
+      <div class="configure-section">
+        <label class="configure-label">URL Halaman</label>
+        <div class="slug-input-group">
+          <span class="slug-prefix">linkcraft.io/p/</span>
+          <input type="text" name="slug" id="slug-input" class="slug-field"
+            placeholder="nama-anda" required maxlength="100"
+            pattern="[a-z0-9][a-z0-9\-]{1,98}[a-z0-9]"
+            oninput="updatePreview()" />
+          <button type="button" class="slug-check-btn" id="slug-check-btn" onclick="checkSlug()">
+            <i class="ph ph-check" id="slug-check-icon"></i>
+          </button>
+        </div>
+        <p class="configure-hint" id="slug-hint">Hanya huruf kecil, angka, dan tanda hubung</p>
+      </div>
+
+      <!-- Title -->
+      <div class="configure-section">
+        <label class="configure-label">Judul Halaman</label>
+        <input type="text" name="title" id="title-input" class="form-input"
+          placeholder="Nama atau bisnis Anda" required maxlength="255"
+          oninput="syncSlug(); updatePreview()" />
+      </div>
+
+      <!-- Bio (optional) -->
+      <div class="configure-section">
+        <label class="configure-label">Bio <span style="opacity:.5;font-weight:400">(opsional)</span></label>
+        <textarea name="bio" id="bio-input" class="form-input" rows="2"
+          placeholder="Deskripsi singkat..." maxlength="300"
+          oninput="updatePreview()"></textarea>
+      </div>
+
+      <!-- QR Section -->
+      <div class="configure-section">
+        <label class="configure-label">QR Code</label>
+        <div class="qr-preview-box">
+          <div class="qr-preview-area">
+            <canvas id="qr-canvas" width="140" height="140"></canvas>
+          </div>
+          <div class="qr-preview-info">
+            <p style="font-size:.8rem; color:var(--clr-text-muted)">QR Code akan digenerate otomatis setelah halaman dibuat.</p>
+            <p style="font-size:.75rem; color:var(--clr-text-dim); margin-top:.4rem">Kustomisasi lebih tersedia setelah membuat halaman.</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:.75rem; margin-top:1.5rem">
+        <a href="{{ url_for('dashboard.new_page_wizard') }}" class="btn btn-ghost" style="flex:1">
+          <i class="ph ph-arrow-left"></i> Kembali
+        </a>
+        <button type="submit" class="btn btn-primary" style="flex:2">
+          Buat Halaman <i class="ph ph-arrow-right"></i>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Right: Live Preview -->
+  <div class="configure-preview-panel">
+    <div class="configure-preview-label">
+      <i class="ph ph-device-mobile-camera"></i> Preview
+    </div>
+    <div class="configure-phone-frame">
+      <div class="configure-phone-screen" id="prev-screen" style="background:{{ tmpl.bg }}">
+        <div class="cprev-avatar" id="prev-avatar" style="background:{{ tmpl.btn }}">
+          <span id="prev-initial">?</span>
+        </div>
+        <h3 class="cprev-title" id="prev-title" style="color:{{ tmpl.text }}">Nama Anda</h3>
+        <p class="cprev-bio" id="prev-bio" style="color:{{ tmpl.text }}"></p>
+        <div class="cprev-links">
+          {% for label in ['Website', 'Instagram', 'TikTok'] %}
+          {% if tmpl.btn_style == 'outline' %}
+          <div class="cprev-btn" style="background:transparent;border:2px solid {{ tmpl.btn }};color:{{ tmpl.btn }};border-radius:999px">{{ label }}</div>
+          {% elif tmpl.btn_style == 'square' %}
+          <div class="cprev-btn" style="background:{{ tmpl.btn }};color:{{ tmpl.text }};border-radius:8px">{{ label }}</div>
+          {% else %}
+          <div class="cprev-btn" style="background:{{ tmpl.btn }};color:{{ tmpl.text }};border-radius:999px">{{ label }}</div>
+          {% endif %}
+          {% endfor %}
+        </div>
+        <p class="cprev-brand">Dibuat dengan <strong>LinkCraft</strong></p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<style>
+.page-wizard { background: var(--clr-bg); min-height: 100vh; }
+
+.configure-layout {
+  display: grid;
+  grid-template-columns: 480px 1fr;
+  min-height: 100vh;
+  align-items: start;
+}
+
+/* Form Panel */
+.configure-form-panel {
+  padding: 2.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 480px;
+}
+.wizard-back {
+  display: inline-flex; align-items: center; gap: .4rem;
+  color: var(--clr-text-muted); text-decoration: none;
+  font-size: .85rem;
+}
+.wizard-back:hover { color: var(--clr-text); }
+.configure-title { font-size: 1.5rem; font-weight: 700; color: var(--clr-text); margin: 0; }
+.configure-subtitle { font-size: .85rem; color: var(--clr-text-muted); margin: 0; line-height: 1.5; }
+
+.configure-section { display: flex; flex-direction: column; gap: .4rem; }
+.configure-label { font-size: .85rem; font-weight: 600; color: var(--clr-text); }
+.configure-hint { font-size: .72rem; color: var(--clr-text-dim); }
+
+/* Slug input */
+.slug-input-group {
+  display: flex;
+  align-items: center;
+  background: var(--clr-surface-2);
+  border: 1.5px solid var(--clr-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color var(--tr);
+}
+.slug-input-group:focus-within { border-color: var(--clr-primary); }
+.slug-prefix {
+  padding: .6rem .75rem;
+  font-size: .82rem;
+  color: var(--clr-text-dim);
+  white-space: nowrap;
+  border-right: 1px solid var(--clr-border);
+  flex-shrink: 0;
+}
+.slug-field {
+  flex: 1; background: none; border: none; outline: none;
+  padding: .6rem .75rem; color: var(--clr-text); font-size: .9rem;
+}
+.slug-check-btn {
+  padding: 0 .75rem; background: none; border: none; cursor: pointer;
+  color: var(--clr-text-dim); font-size: 1rem;
+  border-left: 1px solid var(--clr-border);
+  height: 100%; display: flex; align-items: center;
+  transition: color var(--tr);
+}
+.slug-check-btn:hover { color: var(--clr-primary); }
+.slug-check-btn.ok   { color: var(--clr-success); }
+.slug-check-btn.err  { color: var(--clr-danger); }
+
+/* QR Preview */
+.qr-preview-box {
+  display: flex; align-items: center; gap: 1rem;
+  background: var(--clr-surface-2);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+.qr-preview-area {
+  background: #fff;
+  padding: .5rem;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  width: 140px; height: 140px;
+  display: flex; align-items: center; justify-content: center;
+}
+#qr-canvas { display: block; }
+
+/* Preview Panel */
+.configure-preview-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 3rem 2rem;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  justify-content: center;
+  background: var(--clr-surface);
+  border-left: 1px solid var(--clr-border);
+}
+.configure-preview-label {
+  font-size: .8rem; font-weight: 600; color: var(--clr-text-muted);
+  display: flex; align-items: center; gap: .4rem;
+}
+.configure-phone-frame {
+  width: 260px;
+  border: 3px solid var(--clr-border);
+  border-radius: 2rem;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+.configure-phone-screen {
+  min-height: 480px;
+  padding: 2rem .875rem 1.5rem;
+  display: flex; flex-direction: column; align-items: center; gap: .6rem;
+}
+.cprev-avatar {
+  width: 64px; height: 64px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; font-weight: 700; color: #fff;
+}
+.cprev-title { font-size: .95rem; font-weight: 700; text-align: center; margin: 0; }
+.cprev-bio   { font-size: .72rem; text-align: center; opacity: .7; margin: 0; }
+.cprev-links { width: 100%; display: flex; flex-direction: column; gap: .45rem; margin-top: .35rem; }
+.cprev-btn   { font-size: .75rem; font-weight: 600; text-align: center; padding: .5rem 1rem; }
+.cprev-brand { margin-top: auto; font-size: .58rem; opacity: .35; }
+
+@media (max-width: 900px) {
+  .configure-layout { grid-template-columns: 1fr; }
+  .configure-preview-panel { display: none; }
+}
+</style>
+
+<script>
+let slugManuallyEdited = false;
+
+const titleInput = document.getElementById('title-input');
+const slugInput  = document.getElementById('slug-input');
+const bioInput   = document.getElementById('bio-input');
+const prevTitle  = document.getElementById('prev-title');
+const prevBio    = document.getElementById('prev-bio');
+const prevInitial = document.getElementById('prev-initial');
+
+function slugify(str) {
+  return str.toLowerCase()
+    .replace(/[^a-z0-9\s\-]/g, '')
+    .trim().replace(/\s+/g, '-').replace(/-+/g, '-').slice(0, 100);
+}
+
+function syncSlug() {
+  if (!slugManuallyEdited) {
+    slugInput.value = slugify(titleInput.value);
+  }
+}
+
+slugInput.addEventListener('input', () => {
+  slugManuallyEdited = true;
+  resetCheckBtn();
+});
+
+function updatePreview() {
+  prevTitle.textContent = titleInput.value || 'Nama Anda';
+  prevBio.textContent   = bioInput.value;
+  const letter = (titleInput.value[0] || '?').toUpperCase();
+  prevInitial.textContent = letter;
+}
+
+// Slug availability check (lightweight — just basic validation)
+const checkBtn  = document.getElementById('slug-check-btn');
+const checkIcon = document.getElementById('slug-check-icon');
+const hintEl    = document.getElementById('slug-hint');
+
+function resetCheckBtn() {
+  checkBtn.className  = 'slug-check-btn';
+  checkIcon.className = 'ph ph-check';
+  hintEl.style.color  = '';
+  hintEl.textContent  = 'Hanya huruf kecil, angka, dan tanda hubung';
+}
+
+async function checkSlug() {
+  const val = slugInput.value.trim();
+  if (!val) return;
+  checkIcon.className = 'ph ph-spinner';
+
+  try {
+    const res  = await fetch(`/dashboard/pages/check-slug?slug=${encodeURIComponent(val)}`);
+    const data = await res.json();
+    if (data.available) {
+      checkBtn.className  = 'slug-check-btn ok';
+      checkIcon.className = 'ph ph-check-circle';
+      hintEl.style.color  = 'var(--clr-success)';
+      hintEl.textContent  = 'Slug tersedia!';
+    } else {
+      checkBtn.className  = 'slug-check-btn err';
+      checkIcon.className = 'ph ph-x-circle';
+      hintEl.style.color  = 'var(--clr-danger)';
+      hintEl.textContent  = data.message || 'Slug sudah digunakan.';
+    }
+  } catch {
+    resetCheckBtn();
+  }
+}
+
+// Simple QR code via Google Charts API (no extra lib)
+function drawQR() {
+  const slug = slugInput.value || 'preview';
+  const url  = `https://chart.googleapis.com/chart?chs=140x140&cht=qr&chl=${encodeURIComponent('https://linkcraft.io/p/' + slug)}&choe=UTF-8`;
+  const canvas = document.getElementById('qr-canvas');
+  const ctx    = canvas.getContext('2d');
+  const img    = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => { ctx.clearRect(0,0,140,140); ctx.drawImage(img, 0, 0, 140, 140); };
+  img.src = url;
+}
+
+slugInput.addEventListener('change', drawQR);
+drawQR();
+</script>
+{% endblock %}

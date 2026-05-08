@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Manajemen QR Code — Admin LinkCraft{% endblock %}
+{% block body_class %}page-dashboard page-admin{% endblock %}
+
+{% block body %}
+{% include "dashboard/_sidebar.html" %}
+
+<main class="dashboard-main">
+  {% include "dashboard/_topbar.html" %}
+  <div class="dashboard-content">
+
+    <div class="page-header">
+      <div>
+        <h1 class="page-title"><i class="ph ph-qr-code" style="color:var(--clr-primary)"></i> Manajemen QR Code</h1>
+        <p class="page-subtitle">Total {{ pagination.total }} QR code di seluruh sistem</p>
+      </div>
+    </div>
+
+    <div class="qr-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:1.25rem; margin-top:1rem">
+      {% for qr in pagination.items %}
+      <div class="qr-card" style="background:var(--clr-bg-paper); border-radius:.75rem; border:1px solid var(--clr-border); overflow:hidden">
+        <div style="padding:.75rem; background:var(--clr-bg-input); display:flex; justify-content:center">
+          {% if qr.file_path_png %}
+          <img src="{{ url_for('static', filename=qr.file_path_png) }}" alt="{{ qr.name }}" style="width:120px; height:120px; object-fit:contain; border-radius:.5rem">
+          {% else %}
+          <div style="width:120px; height:120px; display:flex; align-items:center; justify-content:center; color:var(--clr-text-dim)">
+            <i class="ph ph-qr-code" style="font-size:3rem"></i>
+          </div>
+          {% endif %}
+        </div>
+        <div style="padding:1rem">
+          <p style="font-weight:600; margin-bottom:.25rem; font-size:.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ qr.name }}</p>
+          <p style="font-size:.75rem; color:var(--clr-text-dim); margin-bottom:.25rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">
+            <i class="ph ph-link"></i> {{ qr.target_url }}
+          </p>
+          {% if qr.user %}
+          <p style="font-size:.75rem; color:var(--clr-text-dim); margin-bottom:.75rem">
+            <i class="ph ph-user"></i> {{ qr.user.name }}
+          </p>
+          {% endif %}
+          <p style="font-size:.72rem; color:var(--clr-text-dim); margin-bottom:.75rem">{{ qr.created_at.strftime('%d %b %Y') }}</p>
+          <form method="POST" action="{{ url_for('admin.delete_qr', qr_id=qr.id) }}" onsubmit="return confirm('Hapus QR Code ini?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-sm btn-full" style="background:rgba(239,68,68,.1); color:#ef4444; border:none">
+              <i class="ph ph-trash"></i> Hapus
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+      {% if not pagination.items %}
+      <div style="grid-column:1/-1; text-align:center; padding:3rem; color:var(--clr-text-dim)">Belum ada QR Code.</div>
+      {% endif %}
+    </div>
+
+    {% if pagination.pages > 1 %}
+    <div style="display:flex; justify-content:center; gap:.5rem; margin-top:2rem">
+      {% if pagination.has_prev %}
+      <a href="{{ url_for('admin.qr_codes', page=pagination.prev_num) }}" class="btn btn-ghost btn-sm">‹ Sebelumnya</a>
+      {% endif %}
+      <span style="padding:.5rem 1rem; color:var(--clr-text-dim); font-size:.85rem">Hal {{ pagination.page }} / {{ pagination.pages }}</span>
+      {% if pagination.has_next %}
+      <a href="{{ url_for('admin.qr_codes', page=pagination.next_num) }}" class="btn btn-ghost btn-sm">Berikutnya ›</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+</main>
+{% endblock %}

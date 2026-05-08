@@ -1,0 +1,7 @@
+/* ─── ERROR PAGES ──────────────────────────────────────────────────────── */
+{% for code, icon, msg in [
+  (403, 'ph-lock', 'Akses Ditolak'),
+  (404, 'ph-magnifying-glass', 'Halaman Tidak Ditemukan'),
+  (429, 'ph-clock-countdown', 'Terlalu Banyak Request'),
+  (500, 'ph-warning-circle', 'Terjadi Kesalahan Server')
+] %}{% endfor %}

@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}QR Codes — LinkCraft{% endblock %}
+{% block body_class %}page-dashboard{% endblock %}
+
+{% block body %}
+{% include "dashboard/_sidebar.html" %}
+<main class="dashboard-main">
+  {% include "dashboard/_topbar.html" %}
+  <div class="dashboard-content">
+
+    <div class="page-header">
+      <div>
+        <h1 class="page-title"><i class="ph ph-qr-code"></i> QR Codes</h1>
+        <p class="page-subtitle">Generate dan kelola QR code Anda</p>
+      </div>
+      <button class="btn btn-primary" onclick="openModal('create-qr-modal')">
+        <i class="ph ph-plus"></i> Buat QR Code
+      </button>
+    </div>
+
+    <!-- QR Grid -->
+    <div class="qr-grid">
+      {% for qr in pagination.items %}
+      <div class="qr-card">
+        {% if qr.file_path_png %}
+          <img src="{{ url_for('static', filename=qr.file_path_png) }}" alt="{{ qr.name }}" class="qr-img" />
+        {% else %}
+          <div class="qr-img-placeholder"><i class="ph ph-qr-code"></i></div>
+        {% endif %}
+        <div class="qr-card-body">
+          <h4 class="qr-name">{{ qr.name }}</h4>
+          <p class="qr-url" title="{{ qr.target_url }}">{{ qr.target_url | truncate(40) }}</p>
+          <div class="qr-meta">
+            <span><i class="ph ph-eye"></i> {{ qr.total_scans }} scan</span>
+            <span>{{ qr.created_at.strftime('%d %b %Y') }}</span>
+          </div>
+        </div>
+        <div class="qr-card-actions">
+          {% if qr.file_path_png %}
+            <a href="{{ url_for('static', filename=qr.file_path_png) }}" download class="btn btn-ghost btn-sm">
+              <i class="ph ph-download-simple"></i> PNG
+            </a>
+          {% endif %}
+          <form method="POST" action="{{ url_for('dashboard.delete_qr', qr_id=qr.id) }}"
+            onsubmit="return confirm('Hapus QR code ini?')" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit" class="btn btn-danger btn-sm">
+              <i class="ph ph-trash"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+      {% else %}
+      <div class="empty-state-full">
+        <i class="ph ph-qr-code"></i>
+        <p>Belum ada QR Code. <button class="btn-link" onclick="openModal('create-qr-modal')">Buat sekarang</button></p>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if pagination.pages > 1 %}
+    <div class="pagination">
+      {% if pagination.has_prev %}<a href="?page={{ pagination.prev_num }}" class="btn btn-ghost btn-sm"><i class="ph ph-arrow-left"></i> Prev</a>{% endif %}
+      <span class="pagination-info">{{ pagination.page }} / {{ pagination.pages }}</span>
+      {% if pagination.has_next %}<a href="?page={{ pagination.next_num }}" class="btn btn-ghost btn-sm">Next <i class="ph ph-arrow-right"></i></a>{% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+</main>
+
+<!-- Create QR Modal -->
+<div class="modal" id="create-qr-modal">
+  <div class="modal-backdrop" onclick="closeModal('create-qr-modal')"></div>
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>Buat QR Code</h2>
+      <button class="modal-close" onclick="closeModal('create-qr-modal')"><i class="ph ph-x"></i></button>
+    </div>
+    <form method="POST" action="{{ url_for('dashboard.create_qr') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <div class="form-group">
+        <label class="form-label">Nama QR Code *</label>
+        <input type="text" name="name" class="form-input" placeholder="Misal: Menu Restoran" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">URL Target *</label>
+        <div class="input-wrap">
+          <i class="ph ph-link input-icon"></i>
+          <input type="url" name="target_url" class="form-input" placeholder="https://contoh.com" required />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Warna Foreground</label>
+          <div class="color-input-wrap">
+            <input type="color" name="fg_color" value="#000000" class="color-input" id="fg-color" />
+            <span id="fg-color-label">#000000</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Warna Background</label>
+          <div class="color-input-wrap">
+            <input type="color" name="bg_color" value="#FFFFFF" class="color-input" id="bg-color" />
+            <span id="bg-color-label">#FFFFFF</span>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Gaya Dot</label>
+        <select name="dot_style" class="form-select">
+          <option value="square">Kotak (default)</option>
+          <option value="rounded">Rounded</option>
+          <option value="circle">Lingkaran</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('create-qr-modal')">Batal</button>
+        <button type="submit" class="btn btn-primary"><i class="ph ph-qr-code"></i> Generate</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('fg-color').addEventListener('input', e => {
+  document.getElementById('fg-color-label').textContent = e.target.value;
+});
+document.getElementById('bg-color').addEventListener('input', e => {
+  document.getElementById('bg-color-label').textContent = e.target.value;
+});
+</script>
+{% endblock %}

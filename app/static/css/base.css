@@ -1,0 +1,56 @@
+/* ─── base.css — Reset & Typography ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font);
+  background: var(--clr-bg);
+  color: var(--clr-text);
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--clr-primary-light); text-decoration: none; transition: color var(--tr); }
+a:hover { color: var(--clr-primary); }
+
+h1,h2,h3,h4 { font-weight: 700; line-height: 1.2; }
+
+img { max-width: 100%; display: block; }
+
+.container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--clr-primary), var(--clr-accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-muted { color: var(--clr-text-muted); font-size: .9rem; }
+
+/* Flash Messages */
+.flash-container {
+  position: fixed; top: 1rem; right: 1rem;
+  z-index: 9999; display: flex; flex-direction: column; gap: .5rem;
+  max-width: 380px; width: 100%;
+}
+.flash {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: .75rem; padding: .875rem 1.125rem;
+  border-radius: var(--radius); font-size: .9rem; font-weight: 500;
+  border-left: 4px solid; animation: slideIn .3s ease;
+  box-shadow: var(--shadow);
+}
+.flash-success { background:#0d2b1e; border-color: var(--clr-success); color:#34d399; }
+.flash-danger  { background:#2b0d0d; border-color: var(--clr-danger);  color:#f87171; }
+.flash-warning { background:#2b1e0d; border-color: var(--clr-warning); color:#fbbf24; }
+.flash-info    { background:#0d1e2b; border-color: var(--clr-info);    color:#67e8f9; }
+.flash-close   { background:none; border:none; cursor:pointer; color:inherit; opacity:.7; padding:.25rem; }
+.flash-close:hover { opacity:1; }
+
+@keyframes slideIn {
+  from { transform:translateX(110%); opacity:0; }
+  to   { transform:translateX(0);    opacity:1; }
+}

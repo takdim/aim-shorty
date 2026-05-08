@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Daftar — LinkCraft{% endblock %}
+{% block body_class %}page-auth{% endblock %}
+
+{% block body %}
+<div class="auth-layout">
+  <div class="auth-panel auth-panel--left">
+    <a href="{{ url_for('public.index') }}" class="navbar-brand">
+      <span class="brand-icon"><i class="ph ph-link-simple"></i></span>
+      LinkCraft
+    </a>
+    <div class="auth-panel-content">
+      <h2>Mulai gratis, upgrade kapan saja.</h2>
+      <ul class="auth-benefits">
+        <li><i class="ph ph-check-circle"></i> 80 short link gratis / bulan</li>
+        <li><i class="ph ph-check-circle"></i> 5 QR code gratis / bulan</li>
+        <li><i class="ph ph-check-circle"></i> 5 landing pages</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="auth-panel auth-panel--right">
+    <div class="auth-form-wrap">
+      <h1 class="auth-title">Buat akun gratis</h1>
+      <p class="auth-subtitle">Bergabung dengan ribuan pengguna LinkCraft</p>
+
+      <form method="POST" action="{{ url_for('auth.register') }}" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+        <div class="form-group">
+          <label for="name" class="form-label">Nama Lengkap</label>
+          <div class="input-wrap">
+            <i class="ph ph-user input-icon"></i>
+            <input
+              type="text" id="name" name="name"
+              class="form-input"
+              value="{{ name|default('') }}"
+              placeholder="Nama Anda"
+              required autocomplete="name"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="email" class="form-label">Email</label>
+          <div class="input-wrap">
+            <i class="ph ph-envelope input-icon"></i>
+            <input
+              type="email" id="email" name="email"
+              class="form-input"
+              value="{{ email|default('') }}"
+              placeholder="email@contoh.com"
+              required autocomplete="email"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password" class="form-label">Password</label>
+          <div class="input-wrap">
+            <i class="ph ph-lock input-icon"></i>
+            <input
+              type="password" id="password" name="password"
+              class="form-input"
+              placeholder="Minimal 8 karakter"
+              required autocomplete="new-password"
+            />
+            <button type="button" class="input-toggle-pw" onclick="togglePassword('password','pw-icon')" aria-label="Toggle password">
+              <i class="ph ph-eye" id="pw-icon"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="confirm_password" class="form-label">Konfirmasi Password</label>
+          <div class="input-wrap">
+            <i class="ph ph-lock-key input-icon"></i>
+            <input
+              type="password" id="confirm_password" name="confirm_password"
+              class="form-input"
+              placeholder="Ulangi password"
+              required
+            />
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full btn-lg">
+          <i class="ph ph-user-plus"></i> Buat Akun
+        </button>
+      </form>
+
+      <p class="auth-switch">
+        Sudah punya akun? <a href="{{ url_for('auth.login') }}">Login</a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePassword(id, iconId) {
+  const input = document.getElementById(id);
+  const icon  = document.getElementById(iconId);
+  input.type  = input.type === 'password' ? 'text' : 'password';
+  icon.className = input.type === 'password' ? 'ph ph-eye' : 'ph ph-eye-slash';
+}
+
+// Pre-fill URL from sessionStorage if coming from landing page
+window.addEventListener('DOMContentLoaded', () => {
+  const pending = sessionStorage.getItem('pendingUrl');
+  if (pending) sessionStorage.removeItem('pendingUrl');
+});
+</script>
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — LinkCraft{% endblock %}
+{% block body_class %}page-dashboard{% endblock %}
+
+{% block body %}
+{% include "dashboard/_sidebar.html" %}
+
+<main class="dashboard-main">
+  {% include "dashboard/_topbar.html" %}
+
+  <div class="dashboard-content">
+    <!-- Stats Row -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-card-icon" style="--icon-color: #6366f1">
+          <i class="ph ph-link-simple"></i>
+        </div>
+        <div>
+          <p class="stat-card-label">Short Links Dibuat</p>
+          <h3 class="stat-card-value">{{ current_user.short_links.count() }}</h3>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-icon" style="--icon-color: #8b5cf6">
+          <i class="ph ph-qr-code"></i>
+        </div>
+        <div>
+          <p class="stat-card-label">QR Codes Dibuat</p>
+          <h3 class="stat-card-value">{{ current_user.qr_codes.count() }}</h3>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-icon" style="--icon-color: #06b6d4">
+          <i class="ph ph-cursor-click"></i>
+        </div>
+        <div>
+          <p class="stat-card-label">Total Klik</p>
+          <h3 class="stat-card-value">{{ total_clicks }}</h3>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-icon" style="--icon-color: #10b981">
+          <i class="ph ph-package"></i>
+        </div>
+        <div>
+          <p class="stat-card-label">Paket Aktif</p>
+          <h3 class="stat-card-value">{{ current_user.plan | capitalize }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quota Progress -->
+    {% if quota and limits %}
+    <div class="quota-section">
+      <h2 class="section-label">Kuota Bulan Ini</h2>
+      <div class="quota-grid">
+        <div class="quota-card">
+          <div class="quota-header">
+            <span><i class="ph ph-link-simple"></i> Short Links</span>
+            <span class="quota-count">{{ quota.links_used }} / {{ limits.links_per_month }}</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ [((quota.links_used / limits.links_per_month) * 100)|int, 100]|min }}%"></div>
+          </div>
+        </div>
+        <div class="quota-card">
+          <div class="quota-header">
+            <span><i class="ph ph-qr-code"></i> QR Codes</span>
+            <span class="quota-count">{{ quota.qrcodes_used }} / {{ limits.qrcodes_per_month }}</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ [((quota.qrcodes_used / limits.qrcodes_per_month) * 100)|int, 100]|min }}%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Shortcuts -->
+    <div class="shortcuts-section">
+      <h2 class="section-label">Buat Sekarang</h2>
+      <div class="shortcuts-grid">
+        <a href="{{ url_for('dashboard.links') }}" class="shortcut-card">
+          <i class="ph ph-plus-circle"></i>
+          <span>Buat Short Link</span>
+        </a>
+        <a href="{{ url_for('dashboard.qr_codes') }}" class="shortcut-card">
+          <i class="ph ph-qr-code"></i>
+          <span>Buat QR Code</span>
+        </a>
+        <a href="{{ url_for('dashboard.pages') }}" class="shortcut-card">
+          <i class="ph ph-layout"></i>
+          <span>Buat Landing Page</span>
+        </a>
+        <a href="{{ url_for('dashboard.analytics') }}" class="shortcut-card">
+          <i class="ph ph-chart-line-up"></i>
+          <span>Lihat Analitik</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Recent Links -->
+    {% if recent_links %}
+    <div class="recent-section">
+      <div class="section-row">
+        <h2 class="section-label">Link Terbaru</h2>
+        <a href="{{ url_for('dashboard.links') }}" class="see-all">Lihat semua <i class="ph ph-arrow-right"></i></a>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Short URL</th>
+              <th>Judul / Original URL</th>
+              <th>Klik</th>
+              <th>Status</th>
+              <th>Dibuat</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for link in recent_links %}
+            <tr>
+              <td>
+                <a href="{{ link.short_url }}" target="_blank" class="link-slug">
+                  <i class="ph ph-arrow-square-out"></i>
+                  /{{ link.slug }}
+                </a>
+              </td>
+              <td class="url-cell">
+                <span class="link-title">{{ link.title or link.original_url | truncate(50) }}</span>
+              </td>
+              <td><span class="badge badge-clicks">{{ link.total_clicks }}</span></td>
+              <td>
+                <span class="badge {% if link.is_active %}badge-success{% else %}badge-muted{% endif %}">
+                  {{ 'Aktif' if link.is_active else 'Nonaktif' }}
+                </span>
+              </td>
+              <td class="date-cell">{{ link.created_at.strftime('%d %b %Y') }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</main>
+{% endblock %}

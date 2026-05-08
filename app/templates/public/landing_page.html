@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ page.title }} — LinkCraft</title>
+  <meta name="description" content="{{ page.bio or page.title }}" />
+
+  <!-- Open Graph -->
+  <meta property="og:title"       content="{{ page.title }}" />
+  <meta property="og:description" content="{{ page.bio or '' }}" />
+  {% if page.avatar_url %}
+  <meta property="og:image"       content="{{ page.avatar_url }}" />
+  {% endif %}
+  <meta property="og:url" content="{{ page.public_url }}" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+
+  {% set theme = page.theme_config or {} %}
+  {% set bg_color   = theme.get('bg_color',   '#0f0f17') %}
+  {% set btn_color  = theme.get('btn_color',  '#6366f1') %}
+  {% set text_color = theme.get('text_color', '#e2e8f0') %}
+  {% set btn_style  = theme.get('btn_style',  'pill') %}
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background-color: {{ bg_color }};
+      color: {{ text_color }};
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── Wrapper ─────────────────────────────────────── */
+    .lp-wrapper {
+      width: 100%;
+      max-width: 480px;
+      padding: 3rem 1.25rem 5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    /* ── Avatar ──────────────────────────────────────── */
+    .lp-avatar {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      background: {{ btn_color }};
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: 700;
+      color: #fff;
+      overflow: hidden;
+      flex-shrink: 0;
+      box-shadow: 0 4px 24px rgba(0,0,0,.3);
+    }
+    .lp-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* ── Title & Bio ─────────────────────────────────── */
+    .lp-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      text-align: center;
+      color: {{ text_color }};
+    }
+    .lp-bio {
+      font-size: .875rem;
+      text-align: center;
+      opacity: .75;
+      max-width: 380px;
+      line-height: 1.6;
+    }
+
+    /* ── Links ───────────────────────────────────────── */
+    .lp-links {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: .75rem;
+      margin-top: .5rem;
+    }
+
+    .lp-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      width: 100%;
+      padding: .875rem 1.5rem;
+      text-decoration: none;
+      font-size: .95rem;
+      font-weight: 600;
+      transition: opacity .15s ease, transform .15s ease;
+      box-shadow: 0 2px 12px rgba(0,0,0,.25);
+      {% if btn_style == 'outline' %}
+      background: transparent;
+      border: 2px solid {{ btn_color }};
+      color: {{ btn_color }};
+      border-radius: 999px;
+      box-shadow: none;
+      {% elif btn_style == 'square' %}
+      background: {{ btn_color }};
+      color: {{ text_color }};
+      border: none;
+      border-radius: 10px;
+      {% else %}
+      background: {{ btn_color }};
+      color: {{ text_color }};
+      border: none;
+      border-radius: 999px;
+      {% endif %}
+    }
+    .lp-link:hover {
+      opacity: .88;
+      transform: translateY(-1px);
+    }
+    .lp-link:active { transform: translateY(0); opacity: 1; }
+
+    /* ── Footer brand ────────────────────────────────── */
+    .lp-brand {
+      margin-top: 2rem;
+      font-size: .72rem;
+      opacity: .35;
+      text-align: center;
+    }
+    .lp-brand a { color: inherit; text-decoration: none; }
+    .lp-brand a:hover { opacity: .7; }
+
+    /* ── Flashes ─────────────────────────────────────── */
+    .flash-bar {
+      width: 100%;
+      max-width: 480px;
+      padding: .75rem 1rem;
+      border-radius: .5rem;
+      margin: 1rem auto 0;
+      font-size: .85rem;
+      font-weight: 500;
+    }
+    .flash-warning { background: rgba(245,158,11,.15); color: #f59e0b; border: 1px solid rgba(245,158,11,.3); }
+  </style>
+</head>
+<body>
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+    <div class="flash-bar flash-{{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <div class="lp-wrapper">
+
+    <!-- Avatar -->
+    <div class="lp-avatar">
+      {% if page.avatar_url %}
+        <img src="{{ page.avatar_url | e }}" alt="{{ page.title | e }}"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+        <span style="display:none">{{ page.title[0].upper() }}</span>
+      {% else %}
+        {{ page.title[0].upper() }}
+      {% endif %}
+    </div>
+
+    <!-- Title & Bio -->
+    <h1 class="lp-title">{{ page.title }}</h1>
+    {% if page.bio %}
+    <p class="lp-bio">{{ page.bio }}</p>
+    {% endif %}
+
+    <!-- Links -->
+    {% if page.page_links %}
+    <nav class="lp-links" aria-label="Link navigation">
+      {% for pl in page.page_links %}
+      {% if pl.is_active %}
+      <a href="{{ pl.url | e }}" class="lp-link" target="_blank" rel="noopener noreferrer">
+        {% if pl.icon %}<i class="ph ph-{{ pl.icon }}"></i>{% endif %}
+        {{ pl.label }}
+      </a>
+      {% endif %}
+      {% endfor %}
+    </nav>
+    {% else %}
+    <p style="opacity:.4; font-size:.85rem; margin-top:1rem">Belum ada link ditambahkan.</p>
+    {% endif %}
+
+    <!-- Brand -->
+    <p class="lp-brand">
+      Dibuat dengan <a href="{{ url_for('public.index') }}">LinkCraft</a>
+    </p>
+
+  </div>
+
+</body>
+</html>

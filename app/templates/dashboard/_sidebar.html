@@ -1,0 +1,65 @@
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <a href="{{ url_for('public.index') }}" class="navbar-brand sidebar-brand">
+      <span class="brand-icon"><i class="ph ph-link-simple"></i></span>
+      LinkCraft
+    </a>
+    <button class="sidebar-close" onclick="toggleSidebar()" aria-label="Tutup sidebar">
+      <i class="ph ph-x"></i>
+    </button>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a href="{{ url_for('dashboard.index') }}" class="sidebar-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+      <i class="ph ph-house"></i> Home
+    </a>
+    <a href="{{ url_for('dashboard.links') }}" class="sidebar-link {% if request.endpoint == 'dashboard.links' %}active{% endif %}">
+      <i class="ph ph-link-simple"></i> Links
+    </a>
+    <a href="{{ url_for('dashboard.qr_codes') }}" class="sidebar-link {% if request.endpoint == 'dashboard.qr_codes' %}active{% endif %}">
+      <i class="ph ph-qr-code"></i> QR Codes
+    </a>
+    <a href="{{ url_for('dashboard.pages') }}" class="sidebar-link {% if request.endpoint in ['dashboard.pages','dashboard.new_page_wizard','dashboard.configure_page_wizard','dashboard.build_page','dashboard.edit_page'] %}active{% endif %}">
+      <i class="ph ph-layout"></i> Pages
+    </a>
+    <a href="{{ url_for('dashboard.analytics') }}" class="sidebar-link {% if request.endpoint == 'dashboard.analytics' %}active{% endif %}">
+      <i class="ph ph-chart-line-up"></i> Analytics
+    </a>
+
+    {% if current_user.is_admin %}
+    <div class="sidebar-divider"></div>
+    <p style="padding:.25rem 1rem; font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--clr-text-dim)">Admin Panel</p>
+    <a href="{{ url_for('admin.index') }}" class="sidebar-link sidebar-link--admin {% if request.endpoint == 'admin.index' %}active{% endif %}">
+      <i class="ph ph-shield-check"></i> Overview
+    </a>
+    <a href="{{ url_for('admin.users') }}" class="sidebar-link sidebar-link--admin {% if request.endpoint in ['admin.users','admin.toggle_suspend','admin.set_plan','admin.delete_user'] %}active{% endif %}">
+      <i class="ph ph-users"></i> Users
+    </a>
+    <a href="{{ url_for('admin.links') }}" class="sidebar-link sidebar-link--admin {% if request.endpoint in ['admin.links','admin.toggle_link','admin.delete_link'] %}active{% endif %}">
+      <i class="ph ph-link"></i> Links
+    </a>
+    <a href="{{ url_for('admin.qr_codes') }}" class="sidebar-link sidebar-link--admin {% if request.endpoint in ['admin.qr_codes','admin.delete_qr'] %}active{% endif %}">
+      <i class="ph ph-qr-code"></i> QR Codes
+    </a>
+    {% endif %}
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="user-avatar">{{ current_user.name[0].upper() }}</div>
+      <div class="user-info">
+        <p class="user-name">{{ current_user.name }}</p>
+        <div style="display:flex; align-items:center; gap:.5rem">
+          <p class="user-plan">Paket {{ current_user.plan | capitalize }}</p>
+          {% if current_user.plan == 'free' %}
+          <a href="{{ url_for('billing.plans') }}" style="font-size:.7rem; color:var(--clr-warning); font-weight:700; text-decoration:underline">Upgrade</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <a href="{{ url_for('auth.logout') }}" class="sidebar-link sidebar-link--logout">
+      <i class="ph ph-sign-out"></i> Logout
+    </a>
+  </div>
+</aside>
+<div class="sidebar-overlay" onclick="toggleSidebar()"></div>

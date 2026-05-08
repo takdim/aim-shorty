@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Manajemen Link — Admin LinkCraft{% endblock %}
+{% block body_class %}page-dashboard page-admin{% endblock %}
+
+{% block body %}
+{% include "dashboard/_sidebar.html" %}
+
+<main class="dashboard-main">
+  {% include "dashboard/_topbar.html" %}
+  <div class="dashboard-content">
+
+    <div class="page-header">
+      <div>
+        <h1 class="page-title"><i class="ph ph-link" style="color:var(--clr-primary)"></i> Manajemen Link</h1>
+        <p class="page-subtitle">Total {{ pagination.total }} short link di seluruh sistem</p>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <form method="GET" style="margin-bottom:1.5rem; display:flex; gap:.75rem">
+      <div class="form-group" style="flex:1; margin:0">
+        <input type="text" name="q" value="{{ search }}" placeholder="Cari slug atau URL..." class="form-control">
+      </div>
+      <button type="submit" class="btn btn-primary">Cari</button>
+      {% if search %}<a href="{{ url_for('admin.links') }}" class="btn btn-ghost">Reset</a>{% endif %}
+    </form>
+
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Short Link</th>
+            <th>Original URL</th>
+            <th>Pemilik</th>
+            <th>Klik</th>
+            <th>Status</th>
+            <th>Dibuat</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for link in pagination.items %}
+          <tr>
+            <td>
+              <code style="background:var(--clr-bg-input); padding:.2rem .5rem; border-radius:.3rem; font-size:.85rem">
+                /{{ link.slug }}
+              </code>
+            </td>
+            <td>
+              <a href="{{ link.original_url }}" target="_blank" style="color:var(--clr-primary); text-decoration:none; font-size:.85rem; display:block; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">
+                {{ link.original_url }}
+              </a>
+            </td>
+            <td style="font-size:.85rem">
+              {% if link.user %}
+              <div>{{ link.user.name }}</div>
+              <div style="color:var(--clr-text-dim); font-size:.75rem">{{ link.user.email }}</div>
+              {% else %}<span style="color:var(--clr-text-dim)">—</span>{% endif %}
+            </td>
+            <td>{{ link.click_events.count() }}</td>
+            <td>
+              {% if link.is_active %}
+              <span class="badge badge-success">Aktif</span>
+              {% else %}
+              <span class="badge" style="background:rgba(239,68,68,.15); color:#ef4444">Nonaktif</span>
+              {% endif %}
+            </td>
+            <td class="date-cell">{{ link.created_at.strftime('%d %b %Y') }}</td>
+            <td>
+              <div style="display:flex; gap:.4rem">
+                <form method="POST" action="{{ url_for('admin.toggle_link', link_id=link.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-sm btn-ghost" title="Toggle Status">
+                    {% if link.is_active %}<i class="ph ph-eye-slash"></i>{% else %}<i class="ph ph-eye"></i>{% endif %}
+                  </button>
+                </form>
+                <form method="POST" action="{{ url_for('admin.delete_link', link_id=link.id) }}" onsubmit="return confirm('Hapus link /{{ link.slug }}?')">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-sm" style="background:rgba(239,68,68,.1); color:#ef4444">
+                    <i class="ph ph-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+          {% if not pagination.items %}
+          <tr><td colspan="7" style="text-align:center; padding:3rem; color:var(--clr-text-dim)">Tidak ada link ditemukan.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if pagination.pages > 1 %}
+    <div style="display:flex; justify-content:center; gap:.5rem; margin-top:1.5rem">
+      {% if pagination.has_prev %}
+      <a href="{{ url_for('admin.links', page=pagination.prev_num, q=search) }}" class="btn btn-ghost btn-sm">‹ Sebelumnya</a>
+      {% endif %}
+      <span style="padding:.5rem 1rem; color:var(--clr-text-dim); font-size:.85rem">Hal {{ pagination.page }} / {{ pagination.pages }}</span>
+      {% if pagination.has_next %}
+      <a href="{{ url_for('admin.links', page=pagination.next_num, q=search) }}" class="btn btn-ghost btn-sm">Berikutnya ›</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+</main>
+{% endblock %}

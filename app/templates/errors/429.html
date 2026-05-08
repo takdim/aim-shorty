@@ -1,0 +1,7 @@
+{% extends "base.html" %}{% block title %}429 — LinkCraft{% endblock %}{% block body %}
+<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;font-family:Inter,sans-serif">
+  <h1 style="font-size:6rem;font-weight:800;color:#f59e0b;margin:0">429</h1>
+  <p style="font-size:1.5rem;color:#64748b">Terlalu banyak request. Coba lagi sebentar.</p>
+  <a href="{{ url_for('public.index') }}" style="margin-top:1.5rem;padding:.75rem 1.5rem;background:#6366f1;color:#fff;border-radius:.5rem;text-decoration:none">← Kembali ke Beranda</a>
+</div>
+{% endblock %}

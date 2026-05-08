@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block title %}Analitik — LinkCraft{% endblock %}
+{% block body_class %}page-dashboard{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block body %}
+{% include "dashboard/_sidebar.html" %}
+<main class="dashboard-main">
+  {% include "dashboard/_topbar.html" %}
+  <div class="dashboard-content">
+
+    <div class="page-header">
+      <div>
+        <h1 class="page-title"><i class="ph ph-chart-line-up"></i> Analitik</h1>
+        <p class="page-subtitle">Pantau performa link Anda</p>
+      </div>
+    </div>
+
+    {% if current_user.plan == 'free' %}
+    <!-- Upgrade Banner -->
+    <div class="upgrade-banner" style="margin-bottom:1.5rem">
+      <i class="ph ph-lock" style="font-size:1.5rem; color:var(--clr-warning)"></i>
+      <div>
+        <strong>Fitur Terbatas</strong>
+        <p>Anda di paket Free. Upgrade ke Starter (30 hari) atau Pro (1 tahun) untuk data lebih lengkap.</p>
+      </div>
+      <a href="{{ url_for('billing.plans') }}" class="btn btn-primary btn-sm">Upgrade Sekarang</a>
+    </div>
+    {% endif %}
+
+    {% if not has_data %}
+    <!-- Empty State -->
+    <div style="text-align:center; padding:5rem 2rem; color:var(--clr-text-dim)">
+      <i class="ph ph-chart-line" style="font-size:4rem; opacity:.3"></i>
+      <p style="margin-top:1rem; font-size:1rem">Belum ada data analitik.</p>
+      <p style="font-size:.85rem">Buat short link terlebih dahulu, lalu klik link tersebut untuk memulai tracking.</p>
+      <a href="{{ url_for('dashboard.links') }}" class="btn btn-primary" style="margin-top:1rem">Buat Short Link</a>
+    </div>
+    {% else %}
+
+    <!-- Summary Stats -->
+    <div class="stats-grid" style="margin-bottom:2rem">
+      <div class="stat-card">
+        <div class="stat-card-icon" style="--icon-color:#6366f1"><i class="ph ph-cursor-click"></i></div>
+        <div>
+          <p class="stat-card-label">Total Klik ({{ days }} Hari)</p>
+          <h3 class="stat-card-value">{{ total_clicks | default(0) }}</h3>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-icon" style="--icon-color:#10b981"><i class="ph ph-link"></i></div>
+        <div>
+          <p class="stat-card-label">Link Aktif</p>
+          <h3 class="stat-card-value">{{ current_user.short_links.filter_by(is_active=True).count() }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart: Klik per hari -->
+    <div class="stat-card" style="display:block; margin-bottom:2rem">
+      <h2 class="section-label" style="margin-bottom:1.25rem">
+        <i class="ph ph-chart-line-up"></i> Tren Klik — {{ days }} Hari Terakhir
+      </h2>
+      <div style="position:relative; height:280px">
+        <canvas id="clickChart"></canvas>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:2rem">
+
+      <!-- Top Links -->
+      <div class="stat-card" style="display:block">
+        <h2 class="section-label" style="margin-bottom:1rem"><i class="ph ph-trophy"></i> Top 5 Link</h2>
+        {% if top_links %}
+        <div>
+          {% for link in top_links %}
+          <div style="display:flex; align-items:center; gap:.75rem; padding:.6rem 0; border-bottom:1px solid var(--clr-border)">
+            <div style="width:1.75rem; height:1.75rem; border-radius:50%; background:var(--clr-primary); display:flex; align-items:center; justify-content:center; color:#fff; font-size:.7rem; font-weight:700; flex-shrink:0">{{ loop.index }}</div>
+            <div style="flex:1; min-width:0">
+              <div style="font-weight:600; font-size:.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">/{{ link.slug }}</div>
+              <div style="font-size:.73rem; color:var(--clr-text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ link.url }}</div>
+            </div>
+            <span class="badge badge-success" style="flex-shrink:0">{{ link.clicks }} klik</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p style="color:var(--clr-text-dim); font-size:.875rem">Belum ada data klik.</p>
+        {% endif %}
+      </div>
+
+      <!-- Device Breakdown -->
+      <div class="stat-card" style="display:block">
+        <h2 class="section-label" style="margin-bottom:1rem"><i class="ph ph-devices"></i> Perangkat</h2>
+        <div style="position:relative; height:200px; display:flex; align-items:center; justify-content:center">
+          <canvas id="deviceChart"></canvas>
+        </div>
+      </div>
+
+    </div>
+    {% endif %}
+
+  </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+{% if has_data %}
+<script>
+const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+const gridColor  = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
+const textColor  = isDark ? '#94a3b8' : '#64748b';
+const labels     = {{ chart_labels | safe }};
+const clickData  = {{ chart_data   | safe }};
+const deviceData = {{ device_data  | safe }};
+
+// ── Line Chart (Klik per hari) ─────────────────────────────────────────────
+new Chart(document.getElementById('clickChart'), {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [{
+      label: 'Klik',
+      data: clickData,
+      borderColor: '#6366f1',
+      backgroundColor: 'rgba(99,102,241,.12)',
+      borderWidth: 2,
+      fill: true,
+      tension: 0.4,
+      pointRadius: 3,
+      pointHoverRadius: 6,
+      pointBackgroundColor: '#6366f1',
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: {
+        ticks: { color: textColor, maxTicksLimit: 10, font: { size: 11 } },
+        grid:  { color: gridColor }
+      },
+      y: {
+        ticks: { color: textColor, stepSize: 1, font: { size: 11 } },
+        grid:  { color: gridColor },
+        beginAtZero: true
+      }
+    }
+  }
+});
+
+// ── Donut Chart (Perangkat) ────────────────────────────────────────────────
+const deviceLabels = Object.keys(deviceData).map(k => k.charAt(0).toUpperCase() + k.slice(1));
+const deviceValues = Object.values(deviceData);
+new Chart(document.getElementById('deviceChart'), {
+  type: 'doughnut',
+  data: {
+    labels: deviceLabels.length ? deviceLabels : ['Belum ada data'],
+    datasets: [{
+      data: deviceValues.length ? deviceValues : [1],
+      backgroundColor: ['#6366f1','#10b981','#f59e0b','#06b6d4'],
+      borderWidth: 0
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { color: textColor, font: { size: 12 }, padding: 16 }
+      }
+    }
+  }
+});
+</script>
+{% endif %}
+{% endblock %}

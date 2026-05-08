@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Pilih Paket — LinkCraft{% endblock %}
+{% block body_class %}page-dashboard page-plans{% endblock %}
+
+{% block body %}
+{% include "dashboard/_sidebar.html" %}
+
+<main class="dashboard-main">
+  {% include "dashboard/_topbar.html" %}
+
+  <div class="dashboard-content">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Pilih Paket Premium</h1>
+        <p class="page-subtitle">Upgrade akun Anda untuk mendapatkan fitur analitik dan kuota lebih besar.</p>
+      </div>
+    </div>
+
+    <div class="plans-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-top: 2rem;">
+      
+      <!-- Starter Plan -->
+      <div class="plan-card {% if current_user.plan == 'starter' %}active{% endif %}" style="background: var(--clr-bg-paper); padding: 2rem; border-radius: 1rem; border: 2px solid var(--clr-border); position: relative;">
+        {% if current_user.plan == 'starter' %}
+        <div style="position: absolute; top: 1rem; right: 1rem; background: var(--clr-primary); color: white; padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.75rem; font-weight: 700;">Paket Saat Ini</div>
+        {% endif %}
+        <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Starter</h3>
+        <div style="font-size: 2rem; font-weight: 800; color: var(--clr-primary); margin-bottom: 1rem;">Rp 50.000 <span style="font-size: 1rem; color: var(--clr-text-dim); font-weight: 400;">/ bulan</span></div>
+        <ul style="list-style: none; padding: 0; margin-bottom: 2rem;">
+          <li style="margin-bottom: 0.75rem;"><i class="ph ph-check-circle" style="color: var(--clr-success); margin-right: 0.5rem;"></i> 140 Short Links / bln</li>
+          <li style="margin-bottom: 0.75rem;"><i class="ph ph-check-circle" style="color: var(--clr-success); margin-right: 0.5rem;"></i> 15 QR Codes / bln</li>
+          <li style="margin-bottom: 0.75rem;"><i class="ph ph-check-circle" style="color: var(--clr-success); margin-right: 0.5rem;"></i> Analitik 30 Hari</li>
+          <li style="margin-bottom: 0.75rem;"><i class="ph ph-check-circle" style="color: var(--clr-success); margin-right: 0.5rem;"></i> Kustomisasi QR Lanjutan</li>
+        </ul>
+        <button class="btn btn-primary btn-full checkout-btn" data-plan="starter" {% if current_user.plan != 'free' %}disabled{% endif %}>
+          {% if current_user.plan == 'free' %}Pilih Starter{% else %}Paket Aktif{% endif %}
+        </button>
+      </div>
+
+      <!-- Pro Plan -->
+      <div class="plan-card {% if current_user.plan == 'pro' %}active{% endif %}" style="background: var(--clr-bg-paper); padding: 2rem; border-radius: 1rem; border: 2px solid var(--clr-primary); position: relative;">
+        {% if current_user.plan == 'pro' %}
+        <div style="position: absolute; top: 1rem; right: 1rem; background: var(--clr-primary); color: white; padding: 0.25rem 0.75rem; border-radius: 2rem; font-size: 0.75rem; font-weight: 700;">Paket Saat Ini</div>
+        {% endif %}
+        <div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--clr-primary); color: white; padding: 0.25rem 1rem; border-radius: 2rem; font-size: 0.75rem; font-weight: 800;">PALING REKOMENDASI</div>
+        <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Pro</h3>
+        <div style="font-size: 2rem; font-weight: 800; color: var(--clr-primary); margin-bottom: 1rem;">Rp 150.000 <span style="font-size: 1rem; color: var(--clr-text-dim); font-weight: 400;">/ bulan</span></div>
+        <ul style="list-style: none; padding: 0; margin-bottom: 2rem;">
+          <li style="margin-bottom: 0.75rem;"><i class="ph ph-check-circle" style="color: var(--clr-success); margin-right: 0.5rem;"></i> 300 Short Links / bln</li>
+          <li style="margin-bottom: 0.75rem;"><i class="ph ph-check-circle" style="color: var(--clr-success); margin-right: 0.5rem;"></i> 30 QR Codes / bln</li>
+          <li style="margin-bottom: 0.75rem;"><i class="ph ph-check-circle" style="color: var(--clr-success); margin-right: 0.5rem;"></i> Analitik 1 Tahun</li>
+          <li style="margin-bottom: 0.75rem;"><i class="ph ph-check-circle" style="color: var(--clr-success); margin-right: 0.5rem;"></i> Bulk Creation</li>
+          <li style="margin-bottom: 0.75rem;"><i class="ph ph-check-circle" style="color: var(--clr-success); margin-right: 0.5rem;"></i> Semua Fitur QR</li>
+        </ul>
+        <button class="btn btn-primary btn-full checkout-btn" data-plan="pro" {% if current_user.plan == 'pro' %}disabled{% endif %}>
+          {% if current_user.plan != 'pro' %}Pilih Pro{% else %}Paket Aktif{% endif %}
+        </button>
+      </div>
+
+    </div>
+
+    <div style="margin-top: 3rem; text-align: center; color: var(--clr-text-dim); font-size: 0.9rem;">
+      <p><i class="ph ph-lock-key"></i> Pembayaran aman via Midtrans</p>
+      <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 1rem; opacity: 0.6;">
+         <span>QRIS</span> • <span>GoPay</span> • <span>ShopeePay</span> • <span>Virtual Account</span>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://app.midtrans.com/snap/snap.js" data-client-key="{{ client_key }}"></script>
+<script>
+  document.querySelectorAll('.checkout-btn').forEach(btn => {
+    btn.addEventListener('click', async function() {
+      const plan = this.dataset.plan;
+      this.disabled = true;
+      this.innerHTML = '<i class="ph ph-spinner-gap anim-spin"></i> Memproses...';
+
+      try {
+        const response = await fetch(`/dashboard/checkout/${plan}`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': '{{ csrf_token() }}',
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const data = await response.json();
+
+        if (data.token) {
+          window.snap.pay(data.token, {
+            onSuccess: function(result) {
+              window.location.href = "{{ url_for('billing.finish') }}";
+            },
+            onPending: function(result) {
+              window.location.href = "{{ url_for('billing.finish') }}";
+            },
+            onError: function(result) {
+              alert("Pembayaran gagal!");
+              location.reload();
+            },
+            onClose: function() {
+              location.reload();
+            }
+          });
+        } else {
+          alert("Error: " + (data.error || "Gagal membuat transaksi"));
+          location.reload();
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Terjadi kesalahan sistem.");
+        location.reload();
+      }
+    });
+  });
+</script>
+{% endblock %}

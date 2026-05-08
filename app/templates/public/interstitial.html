@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="refresh" content="{{ countdown }};url={{ destination }}" />
+  <title>Menuju Halaman Tujuan — LinkCraft</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js"></script>
+  <!-- Google AdSense -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7117226592130785" crossorigin="anonymous"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0f1117;
+      --bg-card:  #1a1d27;
+      --bg-input: #23263a;
+      --border:   rgba(255,255,255,.08);
+      --primary:  #6366f1;
+      --primary-glow: rgba(99,102,241,.3);
+      --text:     #f1f5f9;
+      --text-dim: #64748b;
+      --success:  #10b981;
+      --warning:  #f59e0b;
+      --radius:   1rem;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Animated background blobs */
+    .bg-blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: .25;
+      pointer-events: none;
+      animation: float 8s ease-in-out infinite;
+    }
+    .bg-blob--1 { width: 500px; height: 500px; background: var(--primary); top: -150px; left: -150px; }
+    .bg-blob--2 { width: 400px; height: 400px; background: #06b6d4; bottom: -100px; right: -100px; animation-delay: -4s; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50%       { transform: translateY(-30px) scale(1.05); }
+    }
+
+    /* Brand */
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--text);
+      text-decoration: none;
+      margin-bottom: 2rem;
+      letter-spacing: -.02em;
+    }
+    .brand-icon {
+      width: 2rem; height: 2rem;
+      background: var(--primary);
+      border-radius: .5rem;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+    }
+
+    /* Main card */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 520px;
+      text-align: center;
+      position: relative;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 25px 60px rgba(0,0,0,.4);
+    }
+
+    /* Countdown ring */
+    .countdown-wrap {
+      position: relative;
+      width: 90px;
+      height: 90px;
+      margin: 0 auto 1.75rem;
+    }
+    .countdown-svg {
+      width: 90px;
+      height: 90px;
+      transform: rotate(-90deg);
+    }
+    .countdown-track {
+      fill: none;
+      stroke: var(--bg-input);
+      stroke-width: 5;
+    }
+    .countdown-progress {
+      fill: none;
+      stroke: var(--primary);
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-dasharray: 245;
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 1s linear;
+      filter: drop-shadow(0 0 6px var(--primary-glow));
+    }
+    .countdown-number {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: .5rem;
+    }
+    .subtitle {
+      font-size: .85rem;
+      color: var(--text-dim);
+      margin-bottom: 1.75rem;
+    }
+
+    /* Destination URL box */
+    .dest-box {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: .6rem;
+      padding: .75rem 1rem;
+      margin-bottom: 1.75rem;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      text-align: left;
+    }
+    .dest-icon { color: var(--primary); font-size: 1.25rem; flex-shrink: 0; }
+    .dest-url {
+      font-size: .78rem;
+      color: var(--text-dim);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .dest-url strong { display: block; font-size: .85rem; color: var(--text); margin-bottom: .1rem; }
+
+    /* Ad banner */
+    .ad-banner {
+      background: var(--bg-input);
+      border: 1px dashed var(--border);
+      border-radius: .75rem;
+      padding: 1.5rem;
+      margin-bottom: 1.75rem;
+      color: var(--text-dim);
+      font-size: .8rem;
+      min-height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: .5rem;
+    }
+    .ad-label {
+      font-size: .65rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--text-dim);
+      opacity: .5;
+      margin-bottom: .25rem;
+    }
+
+    /* Skip button */
+    .btn-skip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      width: 100%;
+      padding: .85rem 1.5rem;
+      background: var(--primary);
+      color: white;
+      font-size: .9rem;
+      font-weight: 700;
+      border: none;
+      border-radius: .75rem;
+      cursor: pointer;
+      text-decoration: none;
+      transition: opacity .2s, transform .15s;
+      opacity: .4;
+      pointer-events: none;
+    }
+    .btn-skip.ready {
+      opacity: 1;
+      pointer-events: all;
+      animation: pulse-btn 1.5s ease-in-out infinite;
+    }
+    .btn-skip:hover.ready { transform: translateY(-2px); }
+
+    @keyframes pulse-btn {
+      0%, 100% { box-shadow: 0 0 0 0 var(--primary-glow); }
+      50%       { box-shadow: 0 0 0 10px transparent; }
+    }
+
+    /* Upgrade CTA */
+    .upgrade-cta {
+      margin-top: 1.5rem;
+      font-size: .78rem;
+      color: var(--text-dim);
+    }
+    .upgrade-cta a {
+      color: var(--warning);
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .upgrade-cta a:hover { text-decoration: underline; }
+
+    /* Progress bar (mobile fallback) */
+    .progress-bar-wrap {
+      height: 4px;
+      background: var(--bg-input);
+      border-radius: 2px;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 2px;
+      transition: width 1s linear;
+    }
+
+    footer {
+      margin-top: 2rem;
+      font-size: .72rem;
+      color: var(--text-dim);
+      opacity: .6;
+    }
+  </style>
+</head>
+<body>
+  <!-- Background decoration -->
+  <div class="bg-blob bg-blob--1"></div>
+  <div class="bg-blob bg-blob--2"></div>
+
+  <!-- Brand -->
+  <a href="{{ url_for('public.index') }}" class="brand">
+    <div class="brand-icon"><i class="ph ph-link-simple"></i></div>
+    LinkCraft
+  </a>
+
+  <!-- Main card -->
+  <div class="card">
+    <!-- Countdown Ring -->
+    <div class="countdown-wrap">
+      <svg class="countdown-svg" viewBox="0 0 90 90">
+        <circle class="countdown-track" cx="45" cy="45" r="39" />
+        <circle class="countdown-progress" id="progress-ring" cx="45" cy="45" r="39" />
+      </svg>
+      <div class="countdown-number" id="countdown-num">{{ countdown }}</div>
+    </div>
+
+    <h1>Anda akan diarahkan ke tujuan...</h1>
+    <p class="subtitle">Halaman ini akan otomatis diarahkan dalam <span id="sec-text">{{ countdown }}</span> detik.</p>
+
+    <!-- Progress bar -->
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progress-bar" style="width: 0%"></div>
+    </div>
+
+    <!-- Destination Preview -->
+    <div class="dest-box">
+      <i class="ph ph-arrow-square-out dest-icon"></i>
+      <div class="dest-url">
+        <strong>Tujuan Link</strong>
+        {{ destination }}
+      </div>
+    </div>
+
+    <!-- Ad Slot -->
+    <div class="ad-banner" style="padding:.5rem; min-height:120px">
+      <span class="ad-label">Sponsor</span>
+      <!-- Aim Crafty Interstitial Banner -->
+      <ins class="adsbygoogle"
+           style="display:block; width:100%"
+           data-ad-client="ca-pub-7117226592130785"
+           data-ad-slot="7344470290"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
+
+    <!-- Skip Button -->
+    <a href="{{ destination }}" id="skip-btn" class="btn-skip">
+      <i class="ph ph-arrow-right"></i>
+      <span id="btn-text">Tunggu {{ countdown }}s...</span>
+    </a>
+
+    <!-- Upgrade CTA for link owner -->
+    <p class="upgrade-cta">
+      Pemilik link ini? <a href="{{ url_for('billing.plans') }}">Upgrade ke Pro</a> untuk menonaktifkan halaman iklan ini.
+    </p>
+  </div>
+
+  <footer>Powered by <strong>LinkCraft</strong> &mdash; Link Management Platform</footer>
+
+  <script>
+    const TOTAL   = {{ countdown }};
+    const CIRCUM  = 2 * Math.PI * 39; // r=39
+    const ring    = document.getElementById('progress-ring');
+    const numEl   = document.getElementById('countdown-num');
+    const secEl   = document.getElementById('sec-text');
+    const btnEl   = document.getElementById('skip-btn');
+    const btnText = document.getElementById('btn-text');
+    const bar     = document.getElementById('progress-bar');
+    const dest    = "{{ destination | safe }}";
+
+    ring.style.strokeDasharray  = CIRCUM;
+    ring.style.strokeDashoffset = 0;
+
+    let remaining = TOTAL;
+
+    const timer = setInterval(() => {
+      remaining--;
+
+      // Update ring
+      const offset = CIRCUM * (remaining / TOTAL);
+      ring.style.strokeDashoffset = CIRCUM - offset;
+
+      // Update number
+      numEl.textContent = remaining;
+      secEl.textContent = remaining;
+
+      // Update progress bar
+      const pct = ((TOTAL - remaining) / TOTAL) * 100;
+      bar.style.width = pct + '%';
+
+      if (remaining <= 0) {
+        clearInterval(timer);
+        numEl.textContent = '✓';
+        btnText.textContent = 'Buka Link Sekarang';
+        btnEl.classList.add('ready');
+        window.location.href = dest;
+      } else if (remaining <= 3) {
+        btnText.textContent = `Lanjut dalam ${remaining}s...`;
+        // Show btn hint early at 3s
+      }
+    }, 1000);
+
+    // Enable skip after countdown done (user can wait or see the ads)
+    setTimeout(() => {
+      btnEl.classList.add('ready');
+      btnText.textContent = 'Buka Link Sekarang →';
+    }, TOTAL * 1000);
+  </script>
+</body>
+</html>
