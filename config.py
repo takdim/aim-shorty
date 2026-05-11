@@ -60,6 +60,12 @@ class Config:
     IPAYMU_API_KEY = os.environ.get("IPAYMU_API_KEY", "")
     IPAYMU_IS_PRODUCTION = os.environ.get("IPAYMU_IS_PRODUCTION", "false").lower() == "true"
 
+    # ── Pakasir ───────────────────────────────────────────────────────────────
+    PAKASIR_PROJECT_SLUG = os.environ.get("PAKASIR_PROJECT_SLUG", "")
+    PAKASIR_API_KEY = os.environ.get("PAKASIR_API_KEY", "")
+    PAKASIR_IS_PRODUCTION = os.environ.get("PAKASIR_IS_PRODUCTION", "false").lower() == "true"
+    PAKASIR_BASE_URL = os.environ.get("PAKASIR_BASE_URL", "https://app.pakasir.com")
+
     # ── App ────────────────────────────────────────────────────────────────────
     APP_BASE_URL = os.environ.get("APP_BASE_URL", "http://localhost:5000")
     WTF_CSRF_ENABLED = True

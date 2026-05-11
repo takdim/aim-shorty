@@ -99,7 +99,7 @@
           <div style="width:100%">
             <p class="stat-card-label">Gateway Aktif</p>
             <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-top:.5rem; flex-wrap:wrap">
-              <div style="font-weight:700; font-size:1rem">{{ active_payment_gateway|upper if active_payment_gateway != 'ipaymu' else 'iPaymu' }}</div>
+              <div style="font-weight:700; font-size:1rem">{{ active_payment_gateway_label }}</div>
               <span class="badge badge-warning">Dapat diubah admin</span>
             </div>
             <form method="POST" action="{{ url_for('admin.set_payment_gateway') }}" style="margin-top:1rem">

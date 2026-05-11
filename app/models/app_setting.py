@@ -8,6 +8,17 @@ class PaymentGateway(enum.Enum):
     midtrans = "midtrans"
     doku = "doku"
     ipaymu = "ipaymu"
+    pakasir = "pakasir"
+
+    @property
+    def label(self) -> str:
+        labels = {
+            PaymentGateway.midtrans: "Midtrans",
+            PaymentGateway.doku: "DOKU",
+            PaymentGateway.ipaymu: "iPaymu",
+            PaymentGateway.pakasir: "Pakasir",
+        }
+        return labels[self]
 
 
 class AppSetting(db.Model):

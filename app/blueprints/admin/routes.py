@@ -51,6 +51,15 @@ def payment_gateway_options():
             ),
             "implemented": False,
         },
+        {
+            "value": PaymentGateway.pakasir.value,
+            "label": PaymentGateway.pakasir.label,
+            "configured": bool(
+                current_app.config.get("PAKASIR_PROJECT_SLUG")
+                and current_app.config.get("PAKASIR_API_KEY")
+            ),
+            "implemented": True,
+        },
     ]
 
 
@@ -64,6 +73,7 @@ def index():
     total_clicks = ClickEvent.query.count()
     recent_users = User.query.order_by(User.created_at.desc()).limit(8).all()
     active_payment_gateway = AppSetting.get_payment_gateway().value
+    active_payment_gateway_label = AppSetting.get_payment_gateway().label
     return render_template(
         "admin/index.html",
         total_users=total_users,
@@ -72,6 +82,7 @@ def index():
         total_clicks=total_clicks,
         recent_users=recent_users,
         active_payment_gateway=active_payment_gateway,
+        active_payment_gateway_label=active_payment_gateway_label,
         payment_gateway_options=payment_gateway_options(),
     )
 
@@ -100,7 +111,7 @@ def set_payment_gateway():
             "warning",
         )
     else:
-        flash(f"Gateway pembayaran aktif diubah ke {gateway.value}.", "success")
+        flash(f"Gateway pembayaran aktif diubah ke {gateway.label}.", "success")
 
     return redirect(url_for("admin.index"))
 

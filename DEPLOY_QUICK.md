@@ -44,6 +44,9 @@ MAIL_PASSWORD=your-app-password
 MIDTRANS_SERVER_KEY=your-midtrans-key
 MIDTRANS_CLIENT_KEY=your-midtrans-key
 MIDTRANS_IS_PRODUCTION=true
+PAKASIR_PROJECT_SLUG=your-pakasir-project-slug
+PAKASIR_API_KEY=your-pakasir-api-key
+PAKASIR_IS_PRODUCTION=true
 APP_BASE_URL=http://161.118.230.226:8006
 EOF
 ```
@@ -51,7 +54,7 @@ EOF
 **⚠️ EDIT .env dengan nilai real Anda:**
 ```bash
 nano .env
-# Ganti: DB_PASSWORD, MAIL_USERNAME, MAIL_PASSWORD, MIDTRANS keys
+# Ganti: DB_PASSWORD, MAIL_USERNAME, MAIL_PASSWORD, MIDTRANS keys, PAKASIR keys
 ```
 
 ### Step 4: Install System Dependencies
