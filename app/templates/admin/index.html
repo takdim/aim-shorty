@@ -94,6 +94,40 @@
 
       <!-- System Health -->
       <div class="health-section">
+        <h2 class="section-label">Payment Gateway</h2>
+        <div class="stat-card" style="margin-bottom:1rem">
+          <div style="width:100%">
+            <p class="stat-card-label">Gateway Aktif</p>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-top:.5rem; flex-wrap:wrap">
+              <div style="font-weight:700; font-size:1rem">{{ active_payment_gateway|upper if active_payment_gateway != 'ipaymu' else 'iPaymu' }}</div>
+              <span class="badge badge-warning">Dapat diubah admin</span>
+            </div>
+            <form method="POST" action="{{ url_for('admin.set_payment_gateway') }}" style="margin-top:1rem">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <label for="payment_gateway" style="display:block; font-size:.85rem; font-weight:600; margin-bottom:.45rem">Gateway checkout</label>
+              <select id="payment_gateway" name="payment_gateway" class="form-input" style="width:100%; margin-bottom:.75rem">
+                {% for option in payment_gateway_options %}
+                <option value="{{ option.value }}" {% if option.value == active_payment_gateway %}selected{% endif %}>
+                  {{ option.label }}{% if not option.implemented %} (belum diimplementasikan){% endif %}{% if not option.configured %} (credential belum lengkap){% endif %}
+                </option>
+                {% endfor %}
+              </select>
+              <button type="submit" class="btn btn-primary btn-full">Simpan Gateway Aktif</button>
+            </form>
+            <div style="display:grid; gap:.55rem; margin-top:1rem">
+              {% for option in payment_gateway_options %}
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:.75rem; font-size:.82rem; color:var(--clr-text-dim)">
+                <span>{{ option.label }}</span>
+                <span>
+                  {% if option.configured %}Configured{% else %}Credential belum lengkap{% endif %}
+                  ·
+                  {% if option.implemented %}Checkout siap{% else %}Checkout belum siap{% endif %}
+                </span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
         <h2 class="section-label">System Health</h2>
         <div class="stat-card" style="margin-bottom:1rem">
           <div style="width:100%">

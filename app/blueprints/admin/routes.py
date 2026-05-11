@@ -1,9 +1,9 @@
-from flask import render_template, redirect, url_for, request, flash
+from flask import render_template, redirect, url_for, request, flash, current_app
 from flask_login import login_required, current_user
 from functools import wraps
 from app.blueprints.admin import admin_bp
 from app.extensions import db
-from app.models import User, ShortLink, QRCode
+from app.models import User, ShortLink, QRCode, AppSetting, PaymentGateway
 from app.models.user import UserRole
 from app.models.subscription import Subscription, PlanType, SubscriptionStatus
 from app.models.click_event import ClickEvent
@@ -21,6 +21,39 @@ def admin_required(f):
     return decorated
 
 
+def payment_gateway_options():
+    return [
+        {
+            "value": PaymentGateway.midtrans.value,
+            "label": "Midtrans",
+            "configured": bool(
+                current_app.config.get("MIDTRANS_SERVER_KEY")
+                and current_app.config.get("MIDTRANS_CLIENT_KEY")
+            ),
+            "implemented": True,
+        },
+        {
+            "value": PaymentGateway.doku.value,
+            "label": "DOKU",
+            "configured": bool(
+                current_app.config.get("DOKU_CLIENT_ID")
+                and current_app.config.get("DOKU_API_KEY")
+                and current_app.config.get("DOKU_API_SECRET")
+            ),
+            "implemented": False,
+        },
+        {
+            "value": PaymentGateway.ipaymu.value,
+            "label": "iPaymu",
+            "configured": bool(
+                current_app.config.get("IPAYMU_VA")
+                and current_app.config.get("IPAYMU_API_KEY")
+            ),
+            "implemented": False,
+        },
+    ]
+
+
 # ── Overview ──────────────────────────────────────────────────────────────────
 @admin_bp.route("/")
 @admin_required
@@ -30,6 +63,7 @@ def index():
     total_qrs    = QRCode.query.count()
     total_clicks = ClickEvent.query.count()
     recent_users = User.query.order_by(User.created_at.desc()).limit(8).all()
+    active_payment_gateway = AppSetting.get_payment_gateway().value
     return render_template(
         "admin/index.html",
         total_users=total_users,
@@ -37,7 +71,38 @@ def index():
         total_qrcodes=total_qrs,
         total_clicks=total_clicks,
         recent_users=recent_users,
+        active_payment_gateway=active_payment_gateway,
+        payment_gateway_options=payment_gateway_options(),
     )
+
+
+@admin_bp.route("/settings/payment-gateway", methods=["POST"])
+@admin_required
+def set_payment_gateway():
+    gateway_value = request.form.get("payment_gateway", "").strip()
+
+    try:
+        gateway = PaymentGateway(gateway_value)
+    except ValueError:
+        flash("Gateway pembayaran tidak valid.", "danger")
+        return redirect(url_for("admin.index"))
+
+    AppSetting.set_value(AppSetting.PAYMENT_GATEWAY_KEY, gateway.value)
+    db.session.commit()
+
+    option = next(
+        (item for item in payment_gateway_options() if item["value"] == gateway.value),
+        None,
+    )
+    if option and not option["implemented"]:
+        flash(
+            f"Gateway {option['label']} sudah diaktifkan, tetapi checkout-nya belum diimplementasikan di aplikasi.",
+            "warning",
+        )
+    else:
+        flash(f"Gateway pembayaran aktif diubah ke {gateway.value}.", "success")
+
+    return redirect(url_for("admin.index"))
 
 
 # ── Users ─────────────────────────────────────────────────────────────────────

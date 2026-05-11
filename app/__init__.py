@@ -24,7 +24,7 @@ def create_app(config_name: str | None = None) -> Flask:
 
     # ── Models (import agar Migrate bisa detect) ────────────────────────────────
     with app.app_context():
-        from app.models import user, subscription, short_link, qr_code, landing_page, click_event, audit_log  # noqa: F401
+        from app.models import user, subscription, short_link, qr_code, landing_page, click_event, audit_log, app_setting  # noqa: F401
 
     # ── Blueprints ─────────────────────────────────────────────────────────────
     from app.blueprints.public import public_bp

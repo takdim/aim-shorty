@@ -48,6 +48,18 @@ class Config:
     MIDTRANS_CLIENT_KEY = os.environ.get("MIDTRANS_CLIENT_KEY", "")
     MIDTRANS_IS_PRODUCTION = os.environ.get("MIDTRANS_IS_PRODUCTION", "false").lower() == "true"
 
+    # ── DOKU ──────────────────────────────────────────────────────────────────
+    DOKU_MERCHANT_ID = os.environ.get("DOKU_MERCHANT_ID", "")
+    DOKU_API_KEY = os.environ.get("DOKU_API_KEY", "")
+    DOKU_API_SECRET = os.environ.get("DOKU_API_SECRET", "")
+    DOKU_CLIENT_ID = os.environ.get("DOKU_CLIENT_ID", "")
+    DOKU_IS_PRODUCTION = os.environ.get("DOKU_IS_PRODUCTION", "false").lower() == "true"
+
+    # ── iPaymu ────────────────────────────────────────────────────────────────
+    IPAYMU_VA = os.environ.get("IPAYMU_VA", "")
+    IPAYMU_API_KEY = os.environ.get("IPAYMU_API_KEY", "")
+    IPAYMU_IS_PRODUCTION = os.environ.get("IPAYMU_IS_PRODUCTION", "false").lower() == "true"
+
     # ── App ────────────────────────────────────────────────────────────────────
     APP_BASE_URL = os.environ.get("APP_BASE_URL", "http://localhost:5000")
     WTF_CSRF_ENABLED = True

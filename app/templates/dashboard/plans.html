@@ -59,7 +59,7 @@
     </div>
 
     <div style="margin-top: 3rem; text-align: center; color: var(--clr-text-dim); font-size: 0.9rem;">
-      <p><i class="ph ph-lock-key"></i> Pembayaran aman via Midtrans</p>
+      <p><i class="ph ph-lock-key"></i> Gateway aktif saat ini: {{ payment_gateway_label }}</p>
       <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 1rem; opacity: 0.6;">
          <span>QRIS</span> • <span>GoPay</span> • <span>ShopeePay</span> • <span>Virtual Account</span>
       </div>
@@ -69,7 +69,9 @@
 {% endblock %}
 
 {% block scripts %}
+{% if payment_gateway == 'midtrans' %}
 <script src="https://app.midtrans.com/snap/snap.js" data-client-key="{{ client_key }}"></script>
+{% endif %}
 <script>
   document.querySelectorAll('.checkout-btn').forEach(btn => {
     btn.addEventListener('click', async function() {
@@ -88,7 +90,7 @@
 
         const data = await response.json();
 
-        if (data.token) {
+        if (data.token && "{{ payment_gateway }}" === "midtrans") {
           window.snap.pay(data.token, {
             onSuccess: function(result) {
               window.location.href = "{{ url_for('billing.finish') }}";
@@ -104,6 +106,8 @@
               location.reload();
             }
           });
+        } else if (data.redirect_url) {
+          window.location.href = data.redirect_url;
         } else {
           alert("Error: " + (data.error || "Gagal membuat transaksi"));
           location.reload();
